@@ -69,4 +69,5 @@ __pypackages__/
 # User specific files
 .idea/
 
+*.csv
 
