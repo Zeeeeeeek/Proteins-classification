@@ -1,7 +1,11 @@
-def print_hi(name):
-    # Use a breakpoint in the code line below to debug your script.
-    print(f'Hi, {name}')  # Press Ctrl+F8 to toggle the breakpoint.
+from api import query_api
+import pandas as pd
+
+
+def main():
+    json = query_api("query=class:2&reviewed=true&show=entries")
+    pd.DataFrame(json).to_csv("output.csv")
 
 
 if __name__ == '__main__':
-    print_hi('PyCharm')
+    main()
