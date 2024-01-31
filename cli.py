@@ -1,26 +1,21 @@
 import argparse
 from api import query_api
-import pandas as pd
 import re
+from data_preprocessing import preprocess_from_json
 
-COLON_PATTERN = re.compile(r'^[^:]+:[^:]+$')
+COLON_PATTERN = re.compile(r'^(?:[^:]+:)+[^:]+$')
 
 
 def check_query_string(query_string):
-    s = re.split(r'[\&\|]', query_string)
-    for i in range(len(s)):
-        if not COLON_PATTERN.match(s[i]):
-            raise ValueError("Query string must be in the form of \"field:value\".")
-        s[i] = s[i].split(":")
-        if s[i][0] == "class" and (not s[i][1].isnumeric() or int(s[i][1]) < 1 or int(s[i][1]) > 5):
-            raise ValueError("Class must be a number between 0 and 5.")
+    if not COLON_PATTERN.match(query_string):
+        raise ValueError("Query string must be in the form of \"field:value\".")
 
 
 def handle_query(args):
     q = "".join(args.query_string)
     check_query_string(q)
-    q += "&reviewed=true&show=entries"
-    print("Querying the API with the following query string: {}".format(q))
+    q += "%2Breviewed:true&show=entries"
+    preprocess_from_json(query_api("query=" + q), args.merge_regions, args.file_name, args.output_format)
 
 
 def handle_cli_input():
@@ -33,6 +28,8 @@ def handle_cli_input():
     parser_query.add_argument('-o', '--output', dest='output_format', choices=['json', 'csv'],
                               help='Output format (default: csv)', default='csv')
     parser_query.add_argument('-n', '--name', dest='file_name', help='File name (default: output)', default='output')
+    parser_query.add_argument('-r', '--regions', dest='merge_regions', action='store_true',
+                              help='Merge regions (default: false)')
     try:
         while True:
 
