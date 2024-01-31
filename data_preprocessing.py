@@ -1,5 +1,7 @@
 import pandas as pd
 
+columns_to_ignore = (["reviewed", "annotator", "origin"])
+
 
 def differentiate_units_ids(df):
     output_df = df.copy()
@@ -34,6 +36,7 @@ def integrate_regions(df):
 
 
 def preprocess_from_json(json, regions, outputname, format):
-    df = integrate_regions(pd.DataFrame(json)) if regions else differentiate_units_ids(pd.DataFrame(json))
+    df = pd.DataFrame(json).drop(columns_to_ignore, axis=1)
+    df = integrate_regions(df) if regions else differentiate_units_ids(df)
     if format == "csv":
         df.to_csv(outputname + ".csv", index=False)
