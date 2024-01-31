@@ -2,6 +2,7 @@ import argparse
 from api import query_api
 import re
 from data_preprocessing import preprocess_from_json
+import time
 
 COLON_PATTERN = re.compile(r'^(?:[^:]+:)+[^:]+$')
 
@@ -14,6 +15,7 @@ def check_query_string(query_string):
 def handle_query(args):
     q = "".join(args.query_string)
     check_query_string(q)
+    q = q.replace("+", "%2B").replace("|", "%7C")
     q += "%2Breviewed:true&show=entries"
     preprocess_from_json(query_api("query=" + q), args.merge_regions, args.file_name, args.output_format)
 
@@ -41,12 +43,16 @@ def handle_cli_input():
             args = parser.parse_args(user_input.split())
 
             try:
+                start = time.time()
                 if args.command == 'query':
                     handle_query(args)
                 else:
                     print("Unknown command.")
+                    continue
+                elapsed = time.time() - start
+                print(f"Elapsed time: {elapsed:.5f} seconds")
             except ValueError as e:
                 print(e)
 
     except EOFError:
-        print("\nRilevato EOF. Uscita.")
+        print("\nExiting")
