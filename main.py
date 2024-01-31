@@ -1,10 +1,12 @@
 from api import query_api
+from cli import handle_cli_input
 import pandas as pd
 
 
 def main():
-    json = query_api("query=class:2&reviewed=true&show=entries")
-    pd.DataFrame(json).to_csv("output.csv")
+    #json = query_api("query=class:2&reviewed=true&show=entries")
+    #pd.DataFrame(json).to_csv("output.csv")
+    handle_cli_input()
 
 
 if __name__ == '__main__':
