@@ -1,6 +1,5 @@
-from api import query_api
+from api import repeatsdb_get
 from cli import handle_cli_input
-import pandas as pd
 
 
 def main():

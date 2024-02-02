@@ -1,5 +1,5 @@
 import argparse
-from api import query_api
+from api import repeatsdb_get
 import re
 from data_preprocessing import preprocess_from_json
 import time
@@ -17,7 +17,7 @@ def handle_query(args):
     check_query_string(q)
     q = q.replace("+", "%2B").replace("|", "%7C")
     q += "%2Breviewed:true&show=entries"
-    preprocess_from_json(query_api("query=" + q), args.merge_regions, args.file_name, args.output_format)
+    preprocess_from_json(repeatsdb_get("query=" + q), args.merge_regions, args.file_name, args.output_format)
 
 
 def handle_cli_input():
