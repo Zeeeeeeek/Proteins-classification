@@ -1,5 +1,7 @@
 import pandas as pd
 from api import pdb_get
+from Bio.PDB import PDBParser
+from io import StringIO
 
 columns_to_ignore = (["reviewed", "annotator", "origin"])
 
@@ -25,7 +27,9 @@ aminoacids = {
     "SEC": "U",
     "VAL": "V",
     "TRP": "W",
-    "TYR": "Y"
+    "TYR": "Y",
+    "MSE": "X", # Selenometionina (non standard) added with X as in repeatsdb
+    "HYP": "X" # Idrossiprolina (non standard) added with X as in repeatsdb
 }
 
 
@@ -65,23 +69,31 @@ def add_sequences(df):
     output_df = df.copy()
     for index, row in df.iterrows():
         pdb_id = row["pdb_id"]
-        chain = row["chain"]
-        pdb = pdb_get(pdb_id)
+        row_chain = row["pdb_chain"]
+        pdb_parser = PDBParser(QUIET=True)
+        pdb = StringIO(pdb_get(pdb_id))
         sequence = ""
-        atom_index = None
-        for line in pdb.split("\n"):
-            if line.startswith("ATOM"):
-                split = line.split()
-                if split[4] == chain:
-                    if atom_index == int(split[5]):
-                        continue
-                    else:
-                        atom_index = int(split[5])
-                        if atom_index >= row["start"]:
-                            sequence += aminoacids[split[3]]
-                            if atom_index == row["end"]:
-                                break
+        structure = pdb_parser.get_structure(pdb_id, pdb)
+        start = int(row["start"])
+        end = int(row["end"])
+        for model in structure:
+            for chain in model:
+                if chain.id != row_chain:
+                    continue
+                for residue in chain:
+                    if residue.get_full_id()[3][1] >= start:
+                        try:
+                            sequence += aminoacids[residue.get_resname()]
+                        except KeyError:
+                            with open("error_log.txt", "a") as f:
+                                f.write(f"Error in {pdb_id} with residue {residue.get_resname()} at position {residue.get_full_id()[3][1]}\n\n")
+                                f.write(f"Row:\n {row}\n\n")
+                                f.write(f"Sequence: {sequence} + {residue.get_resname()}\n\n")
+                            break
+                    if residue.get_full_id()[3][1] == end:
+                        break
         output_df.at[index, "sequence"] = sequence
+    return output_df
 
 
 def remove_rows_with_errors(df):
@@ -117,5 +129,6 @@ def preprocess_from_json(json, regions, outputname, format):
     })
     df = remove_rows_with_errors(df)
     df = integrate_regions(df) if regions else differentiate_units_ids(df)
+    df = add_sequences(df)
     if format == "csv":
         df.to_csv(outputname + ".csv", index=False)
