@@ -1,3 +1,10 @@
+import threading
+
+import pandas as pd
+
+from data_preprocessing import split_df_into_n
+
+
 def kmer_count(k, sequence):
     """
     Count the number of k-mers in a sequence.
@@ -6,6 +13,8 @@ def kmer_count(k, sequence):
     :return: dict
     """
     kmer_dict = {}
+    if type(sequence) != str:
+        return kmer_dict
     for i in range(len(sequence) - k + 1):
         kmer = sequence[i:i + k]
         if kmer in kmer_dict:
@@ -22,7 +31,7 @@ def kmer_count_dataframe(k, df):
     :param df: pd.DataFrame
     :return: pd.DataFrame
     """
-    copy_df = df.copy()
+    copy_df = df[["repeatsdb_id", "sequence"]].copy()
     kmer_set = set()
     for index, row in df.iterrows():
         if row['sequence'] is None or row['sequence'] == "":
@@ -32,5 +41,24 @@ def kmer_count_dataframe(k, df):
             kmer_set.add(kmer)
             copy_df.at[index, kmer] = count
     for kmer_col in kmer_set:
-        copy_df[kmer_col] = copy_df[kmer_col].fillna(0).astype(int)
+        copy_df[kmer_col] = copy_df[kmer_col].fillna(0)
     return copy_df
+
+
+def multithread_kmer_count_df(df, k, n_threads=10):
+    threads = []
+    dfs = split_df_into_n(df, n_threads)
+    merged_dfs = []
+
+    def worker_function(sdf, worker_k, result_list):
+        result_list.append(kmer_count_dataframe(worker_k, sdf))
+
+    for sub_df in dfs:
+        t = threading.Thread(target=worker_function, args=(sub_df, k, merged_dfs))
+        threads.append(t)
+        t.start()
+
+    for t in threads:
+        t.join()
+
+    return pd.concat(merged_dfs, ignore_index=True)

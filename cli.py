@@ -7,7 +7,7 @@ import re
 from data_preprocessing import preprocess_from_json
 import time
 
-from kmer import kmer_count_dataframe
+from kmer import multithread_kmer_count_df
 
 COLON_PATTERN = re.compile(r'^(?:[^:]+:)+[^:]+$')
 
@@ -29,7 +29,7 @@ def handle_kmer(args):
     input_name = args.input if args.input.endswith(".csv") else args.input + ".csv"
     df = pd.read_csv(input_name)
     output_name = args.file_name + ".csv" if args.file_name is not None else args.input + "_" + str(args.k) + "_mer.csv"
-    kmer_count_dataframe(args.k, df).to_csv(output_name, index=False)
+    multithread_kmer_count_df(df, args.k).to_csv(output_name, index=False)
 
 def handle_cli_input():
     parser = argparse.ArgumentParser()
