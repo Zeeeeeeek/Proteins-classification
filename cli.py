@@ -1,8 +1,13 @@
 import argparse
+
+import pandas as pd
+
 from api import repeatsdb_get
 import re
 from data_preprocessing import preprocess_from_json
 import time
+
+from kmer import kmer_count_dataframe
 
 COLON_PATTERN = re.compile(r'^(?:[^:]+:)+[^:]+$')
 
@@ -20,6 +25,12 @@ def handle_query(args):
     preprocess_from_json(repeatsdb_get("query=" + q), args.merge_regions, args.file_name, args.output_format)
 
 
+def handle_kmer(args):
+    input_name = args.input if args.input.endswith(".csv") else args.input + ".csv"
+    df = pd.read_csv(input_name)
+    output_name = args.file_name + ".csv" if args.file_name is not None else args.input + "_" + str(args.k) + "_mer.csv"
+    kmer_count_dataframe(args.k, df).to_csv(output_name, index=False)
+
 def handle_cli_input():
     parser = argparse.ArgumentParser()
     subparsers = parser.add_subparsers(title='commands', dest='command')
@@ -32,6 +43,12 @@ def handle_cli_input():
     parser_query.add_argument('-n', '--name', dest='file_name', help='File name (default: output)', default='output')
     parser_query.add_argument('-r', '--regions', dest='merge_regions', action='store_true',
                               help='Merge regions (default: false)')
+    # Kmer count
+    parser_kmer = subparsers.add_parser('kmer', help='Count kmers in a dataset')
+    parser_kmer.add_argument('input', help='Input file name', type=str)
+    parser_kmer.add_argument('k', help='Kmer length', type=int, nargs='?', default=0)
+    parser_kmer.add_argument('-n', '--name', dest='file_name', help='File name (default: input_k_mer)', default=None,
+                             type=str)
     try:
         while True:
 
@@ -44,11 +61,13 @@ def handle_cli_input():
 
             try:
                 start = time.time()
-                if args.command == 'query':
-                    handle_query(args)
-                else:
-                    print("Unknown command.")
-                    continue
+                match args.command:
+                    case 'query':
+                        handle_query(args)
+                    case 'kmer':
+                        handle_kmer(args)
+                    case _:
+                        print("Invalid command")
                 elapsed = time.time() - start
                 print(f"Elapsed time: {elapsed:.5f} seconds")
             except ValueError as e:
