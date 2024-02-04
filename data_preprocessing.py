@@ -4,6 +4,7 @@ from Bio.PDB import PDBParser
 from io import StringIO
 import threading
 import warnings
+import logging
 
 warnings.filterwarnings("ignore")
 
@@ -107,17 +108,13 @@ def lambda_sequence(row):
                 continue
             for residue in chain:
                 if residue.get_full_id()[3][1] >= start:
-                    try:
-                        sequence += three_residue_to_one(residue.get_resname())
-                    except KeyError:
-                        with open("error_log.txt", "a") as f:
-                            f.write(
-                                f"Error in {pdb_id} with residue {residue.get_resname()} at position {residue.get_full_id()[3][1]}\n\n")
-                            f.write(f"Row:\n {row}\n\n")
-                            f.write(f"Sequence: {sequence} + {residue.get_resname()}\n\n")
-                        break
+                    sequence += three_residue_to_one(residue.get_resname())
                 if residue.get_full_id()[3][1] == end:
                     break
+    if len(sequence) != (end - start + 1):
+        logging.error(f"Sequence length mismatch for {pdb_id} {row_chain} {start} {end}\n"
+                      f"Expected length: {end - start + 1}, actual length: {len(sequence)}\n"
+                      f"Sequence: {sequence}")
     return sequence
 
 
