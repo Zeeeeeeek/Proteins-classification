@@ -5,8 +5,17 @@ from io import StringIO
 import threading
 import warnings
 import logging
+import os
 
-logging.basicConfig(filename="preprocessing.log", level=logging.ERROR,
+def get_log_file_name():
+    base_filename = "log/preprocessing.log"
+    index = 1
+    while os.path.exists(f"{base_filename}_{index}"):
+        index += 1
+    return f"{base_filename}_{index}"
+
+
+logging.basicConfig(filename=get_log_file_name(), level=logging.ERROR,
                     format="%(asctime)s,%(msecs)d %(name)s %(message)s",
                     datefmt="%H:%M:%S",
                     filemode="w")
@@ -177,4 +186,4 @@ def preprocess_from_json(json, regions, outputname, format):
         t.join()
     df = pd.concat(dfs)
     if format == "csv":
-        df.to_csv(outputname + ".csv", index=False)
+        df.to_csv("csv/" + outputname + ".csv", index=False)
