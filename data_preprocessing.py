@@ -7,6 +7,7 @@ import warnings
 import logging
 import os
 
+
 def get_log_file_name():
     base_filename = "log/preprocessing"
     index = 1
@@ -107,28 +108,35 @@ def three_residue_to_one(residue):
             return "X"
 
 
-def lambda_sequence(row):
-    pdb_id = row["pdb_id"]
-    row_chain = row["pdb_chain"]
-    pdb_parser = PDBParser(QUIET=True)
-    pdb = StringIO(pdb_get(pdb_id))
+def extract_sequence(structure, row_chain, start, end):
     sequence = ""
-    structure = pdb_parser.get_structure(pdb_id, pdb)
-    start = int(row["start"])
-    end = int(row["end"])
     for model in structure:
         for chain in model:
             if chain.id != row_chain:
                 continue
             for residue in chain:
-                if residue.get_full_id()[3][1] >= start:
+                if start <= residue.get_full_id()[3][1] <= end:
                     sequence += three_residue_to_one(residue.get_resname())
                 if residue.get_full_id()[3][1] == end:
-                    break
+                    return sequence
+    return sequence
+
+
+def lambda_sequence(row):
+    pdb_id = row["pdb_id"]
+    row_chain = row["pdb_chain"]
+    pdb_parser = PDBParser(QUIET=True)
+    pdb = StringIO(pdb_get(pdb_id))
+
+    structure = pdb_parser.get_structure(pdb_id, pdb)
+    start = int(row["start"])
+    end = int(row["end"])
+    sequence = extract_sequence(structure, row_chain, start, end)
     if len(sequence) != (end - start + 1):
-        logging.error(f"Sequence length mismatch for pdb_id: {pdb_id} pdb_chain: {row_chain} start: {start} end: {end}\n"
-                      f"Expected length: {end - start + 1}, actual length: {len(sequence)}\n"
-                      f"Sequence: {sequence}\n")
+        logging.error(
+            f"Sequence length mismatch for pdb_id: {pdb_id} pdb_chain: {row_chain} start: {start} end: {end}\n"
+            f"Expected length: {end - start + 1}, actual length: {len(sequence)}\n"
+            f"Sequence: {sequence}\n")
     return sequence
 
 
