@@ -2,35 +2,12 @@ import pandas as pd
 from api import pdb_get
 from Bio.PDB import PDBParser
 from io import StringIO
+import threading
+import warnings
+
+warnings.filterwarnings("ignore")
 
 columns_to_ignore = (["reviewed", "annotator", "origin"])
-
-aminoacids = {
-    "ALA": "A",
-    "CYS": "C",
-    "ASP": "D",
-    "GLU": "E",
-    "PHE": "F",
-    "GLY": "G",
-    "HIS": "H",
-    "ILE": "I",
-    "LYS": "K",
-    "LEU": "L",
-    "MET": "M",
-    "ASN": "N",
-    "PYL": "O",
-    "PRO": "P",
-    "GLN": "Q",
-    "ARG": "R",
-    "SER": "S",
-    "THR": "T",
-    "SEC": "U",
-    "VAL": "V",
-    "TRP": "W",
-    "TYR": "Y",
-    "MSE": "X", # Selenometionina (non standard) added with X as in repeatsdb
-    "HYP": "X" # Idrossiprolina (non standard) added with X as in repeatsdb
-}
 
 
 def differentiate_units_ids(df):
@@ -65,35 +42,83 @@ def integrate_regions(df):
     return output_df
 
 
-def add_sequences(df):
-    output_df = df.copy()
-    for index, row in df.iterrows():
-        pdb_id = row["pdb_id"]
-        row_chain = row["pdb_chain"]
-        pdb_parser = PDBParser(QUIET=True)
-        pdb = StringIO(pdb_get(pdb_id))
-        sequence = ""
-        structure = pdb_parser.get_structure(pdb_id, pdb)
-        start = int(row["start"])
-        end = int(row["end"])
-        for model in structure:
-            for chain in model:
-                if chain.id != row_chain:
-                    continue
-                for residue in chain:
-                    if residue.get_full_id()[3][1] >= start:
-                        try:
-                            sequence += aminoacids[residue.get_resname()]
-                        except KeyError:
-                            with open("error_log.txt", "a") as f:
-                                f.write(f"Error in {pdb_id} with residue {residue.get_resname()} at position {residue.get_full_id()[3][1]}\n\n")
-                                f.write(f"Row:\n {row}\n\n")
-                                f.write(f"Sequence: {sequence} + {residue.get_resname()}\n\n")
-                            break
-                    if residue.get_full_id()[3][1] == end:
+def three_residue_to_one(residue):
+    match residue:
+        case "ALA":
+            return "A"
+        case "CYS":
+            return "C"
+        case "ASP":
+            return "D"
+        case "GLU":
+            return "E"
+        case "PHE":
+            return "F"
+        case "GLY":
+            return "G"
+        case "HIS":
+            return "H"
+        case "ILE":
+            return "I"
+        case "LYS":
+            return "K"
+        case "LEU":
+            return "L"
+        case "MET":
+            return "M"
+        case "ASN":
+            return "N"
+        case "PYL":
+            return "O"
+        case "PRO":
+            return "P"
+        case "GLN":
+            return "Q"
+        case "ARG":
+            return "R"
+        case "SER":
+            return "S"
+        case "THR":
+            return "T"
+        case "SEC":
+            return "U"
+        case "VAL":
+            return "V"
+        case "TRP":
+            return "W"
+        case "TYR":
+            return "Y"
+        case _:
+            return "X"
+
+
+def lambda_sequence(row):
+    pdb_id = row["pdb_id"]
+    row_chain = row["pdb_chain"]
+    pdb_parser = PDBParser(QUIET=True)
+    pdb = StringIO(pdb_get(pdb_id))
+    sequence = ""
+    structure = pdb_parser.get_structure(pdb_id, pdb)
+    start = int(row["start"])
+    end = int(row["end"])
+    for model in structure:
+        for chain in model:
+            if chain.id != row_chain:
+                continue
+            for residue in chain:
+                if residue.get_full_id()[3][1] >= start:
+                    try:
+                        sequence += three_residue_to_one(residue.get_resname())
+                    except KeyError:
+                        with open("error_log.txt", "a") as f:
+                            f.write(
+                                f"Error in {pdb_id} with residue {residue.get_resname()} at position {residue.get_full_id()[3][1]}\n\n")
+                            f.write(f"Row:\n {row}\n\n")
+                            f.write(f"Sequence: {sequence} + {residue.get_resname()}\n\n")
                         break
-        output_df.at[index, "sequence"] = sequence
-    return output_df
+                if residue.get_full_id()[3][1] == end:
+                    break
+    return sequence
 
 
 def remove_rows_with_errors(df):
@@ -116,6 +141,17 @@ def remove_rows_with_errors(df):
     return output_df[~output_df['region_id'].isin(to_remove)]
 
 
+def split_df_into_n(df, n):
+    """
+    Split a dataframe into n dataframes.
+    """
+    return [df[i::n] for i in range(n)]
+
+
+def thread_worker(df):
+    df.loc[:, "sequence"] = df.apply(lambda_sequence, axis=1)
+
+
 def preprocess_from_json(json, regions, outputname, format):
     df = pd.DataFrame(json).drop(columns_to_ignore, axis=1)
     df = df.astype({
@@ -129,6 +165,14 @@ def preprocess_from_json(json, regions, outputname, format):
     })
     df = remove_rows_with_errors(df)
     df = integrate_regions(df) if regions else differentiate_units_ids(df)
-    df = add_sequences(df)
+    threads = []
+    dfs = split_df_into_n(df, 10)
+    for d in dfs:
+        t = threading.Thread(target=thread_worker, args=(d,))
+        threads.append(t)
+        t.start()
+    for t in threads:
+        t.join()
+    df = pd.concat(dfs)
     if format == "csv":
         df.to_csv(outputname + ".csv", index=False)
