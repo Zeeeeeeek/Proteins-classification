@@ -6,6 +6,11 @@ import threading
 import warnings
 import logging
 
+logging.basicConfig(filename="preprocessing.log", level=logging.ERROR,
+                    format="%(asctime)s,%(msecs)d %(name)s %(message)s",
+                    datefmt="%H:%M:%S",
+                    filemode="w")
+
 warnings.filterwarnings("ignore")
 
 columns_to_ignore = (["reviewed", "annotator", "origin"])
@@ -112,9 +117,9 @@ def lambda_sequence(row):
                 if residue.get_full_id()[3][1] == end:
                     break
     if len(sequence) != (end - start + 1):
-        logging.error(f"Sequence length mismatch for {pdb_id} {row_chain} {start} {end}\n"
+        logging.error(f"Sequence length mismatch for pdb_id: {pdb_id} pdb_chain: {row_chain} start: {start} end: {end}\n"
                       f"Expected length: {end - start + 1}, actual length: {len(sequence)}\n"
-                      f"Sequence: {sequence}")
+                      f"Sequence: {sequence}\n")
     return sequence
 
 
