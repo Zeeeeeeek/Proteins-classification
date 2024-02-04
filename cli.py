@@ -27,7 +27,7 @@ def handle_query(args):
 
 def handle_kmer(args):
     input_name = args.input if args.input.endswith(".csv") else args.input + ".csv"
-    df = pd.read_csv(input_name)
+    df = pd.read_csv("csv/"+input_name)
     output_name = args.file_name + ".csv" if args.file_name is not None else args.input + "_" + str(args.k) + "_mer.csv"
     multithread_kmer_count_df(df, args.k).to_csv(output_name, index=False)
 

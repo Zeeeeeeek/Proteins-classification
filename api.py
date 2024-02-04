@@ -10,5 +10,5 @@ def repeatsdb_get(query):
 
 
 def pdb_get(pdb_id):
-    r = requests.get(PDB_URL + pdb_id + ".pdb", timeout=5)
+    r = requests.get(PDB_URL + pdb_id + ".pdb")
     return r.text

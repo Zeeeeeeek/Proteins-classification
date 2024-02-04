@@ -1,5 +1,6 @@
 import threading
 
+import numpy as np
 import pandas as pd
 
 from data_preprocessing import split_df_into_n
@@ -41,7 +42,7 @@ def kmer_count_dataframe(k, df):
             kmer_set.add(kmer)
             copy_df.at[index, kmer] = count
     for kmer_col in kmer_set:
-        copy_df[kmer_col] = copy_df[kmer_col].fillna(0)
+        copy_df[kmer_col] = copy_df[kmer_col].replace(np.nan, 0).astype(int)
     return copy_df
 
 

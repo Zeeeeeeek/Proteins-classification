@@ -8,11 +8,11 @@ import logging
 import os
 
 def get_log_file_name():
-    base_filename = "log/preprocessing.log"
+    base_filename = "log/preprocessing"
     index = 1
-    while os.path.exists(f"{base_filename}_{index}"):
+    while os.path.exists(f"{base_filename}_{index}.log"):
         index += 1
-    return f"{base_filename}_{index}"
+    return f"{base_filename}_{index}.log"
 
 
 logging.basicConfig(filename=get_log_file_name(), level=logging.ERROR,
@@ -177,7 +177,7 @@ def preprocess_from_json(json, regions, outputname, format):
     df = remove_rows_with_errors(df)
     df = integrate_regions(df) if regions else differentiate_units_ids(df)
     threads = []
-    dfs = split_df_into_n(df, 10)
+    dfs = split_df_into_n(df, 20)
     for d in dfs:
         t = threading.Thread(target=thread_worker, args=(d,))
         threads.append(t)
