@@ -151,7 +151,13 @@ def lambda_sequence(row):
     res_dict = extract_res_dict(structure, row_chain, start, end)
     if len(res_dict) != (end - start + 1):
         res_dict.update(extract_remark_465(pdb, row_chain, start, end))
-    sequence = "".join([three_residue_to_one(res_dict[i]) for i in range(start, end + 1)])
+    sequence = ""
+    for key, value in res_dict.items():
+        try:
+            sequence += three_residue_to_one(value)
+        except KeyError:
+            logging.error(
+                f"Unknown residue {value} for pdb_id: {pdb_id} pdb_chain: {row_chain} start: {start} end: {end}\n")
     if len(sequence) != (end - start + 1):
         logging.error(
             f"Sequence length mismatch for pdb_id: {pdb_id} pdb_chain: {row_chain} start: {start} end: {end}\n"
