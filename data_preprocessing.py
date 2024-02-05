@@ -1,3 +1,5 @@
+from datetime import datetime
+
 import pandas as pd
 from api import pdb_get
 from Bio.PDB import PDBParser
@@ -5,19 +7,10 @@ from io import StringIO
 import threading
 import warnings
 import logging
-import os
 
 
-def get_log_file_name():
-    base_filename = "log/preprocessing"
-    index = 1
-    while os.path.exists(f"{base_filename}_{index}.log"):
-        index += 1
-    return f"{base_filename}_{index}.log"
-
-
-logging.basicConfig(filename=get_log_file_name(), level=logging.ERROR,
-                    format="%(asctime)s,%(msecs)d %(name)s %(message)s",
+logging.basicConfig(filename=f"log/{datetime.now().strftime('%d_%H_%M_%S')}_preprocessing.log",
+                    format="%(levelname)s %(asctime)s,%(msecs)d %(message)s",
                     datefmt="%H:%M:%S",
                     filemode="w")
 
@@ -131,6 +124,8 @@ def extract_remark_465(pdb_string, chain_id, start, end):
             remark_465.append(line.split()[2:])
         elif met_remark_465:
             break
+    if len(remark_465) < 7:
+        return {}
     remark_465 = remark_465[7:]
     res_dict = {}
     for line in remark_465:
@@ -138,31 +133,40 @@ def extract_remark_465(pdb_string, chain_id, start, end):
             res_dict[int(line[2])] = line[0]
     return res_dict
 
+
 def lambda_sequence(row):
     pdb_id = row["pdb_id"]
     row_chain = row["pdb_chain"]
     pdb_parser = PDBParser(QUIET=True)
     pdb = pdb_get(pdb_id)
     pdb_io = StringIO(pdb)
-
     structure = pdb_parser.get_structure(pdb_id, pdb_io)
     start = int(row["start"])
     end = int(row["end"])
     res_dict = extract_res_dict(structure, row_chain, start, end)
     if len(res_dict) != (end - start + 1):
-        res_dict.update(extract_remark_465(pdb, row_chain, start, end))
+        remarks = extract_remark_465(pdb, row_chain, start, end)
+        res_dict.update(remarks)
     sequence = ""
-    for key, value in res_dict.items():
+    skipped = False  # Logging purposes
+    for i in range(start, end + 1):
         try:
-            sequence += three_residue_to_one(value)
+            sequence += three_residue_to_one(res_dict[i])
         except KeyError:
-            logging.error(
-                f"Unknown residue {value} for pdb_id: {pdb_id} pdb_chain: {row_chain} start: {start} end: {end}\n")
-    if len(sequence) != (end - start + 1):
+            skipped = True
+            continue  # At this point missing residues should be ignored as repeatsdb does
+    if skipped:
+        logging.warning(
+            f"At least one residue is missing from pdb file for pdb_id: {pdb_id} pdb_chain: {row_chain} start: {start} end: {end}\n"
+            f"This may not be an error, since the pdb file may not contain all the residues in the sequence\n"
+            f"Sequence: {sequence}\n"
+        )
+    elif len(sequence) != (end - start + 1):
         logging.error(
             f"Sequence length mismatch for pdb_id: {pdb_id} pdb_chain: {row_chain} start: {start} end: {end}\n"
             f"Expected length: {end - start + 1}, actual length: {len(sequence)}\n"
-            f"Sequence: {sequence}\n")
+            f"Sequence: {sequence}\n"
+        )
     return sequence
 
 
