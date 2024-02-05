@@ -108,30 +108,50 @@ def three_residue_to_one(residue):
             return "X"
 
 
-def extract_sequence(structure, row_chain, start, end):
-    sequence = ""
+def extract_res_dict(structure, chain_id, start, end):
+    rest_dict = {}
     for model in structure:
         for chain in model:
-            if chain.id != row_chain:
+            if chain.id != chain_id:
                 continue
             for residue in chain:
                 if start <= residue.get_full_id()[3][1] <= end:
-                    sequence += three_residue_to_one(residue.get_resname())
-                if residue.get_full_id()[3][1] == end:
-                    return sequence
-    return sequence
+                    rest_dict[residue.get_full_id()[3][1]] = residue.get_resname()
+                if residue.get_full_id()[3][1] > end:
+                    return rest_dict
+    return rest_dict
 
+
+def extract_remark_465(pdb_string, chain_id, start, end):
+    remark_465 = []
+    met_remark_465 = False
+    for line in pdb_string.split("\n"):
+        if line.startswith("REMARK 465"):
+            met_remark_465 = True
+            remark_465.append(line.split()[2:])
+        elif met_remark_465:
+            break
+    remark_465 = remark_465[7:]
+    res_dict = {}
+    for line in remark_465:
+        if line[1] == chain_id and start <= int(line[2]) <= end:
+            res_dict[int(line[2])] = line[0]
+    return res_dict
 
 def lambda_sequence(row):
     pdb_id = row["pdb_id"]
     row_chain = row["pdb_chain"]
     pdb_parser = PDBParser(QUIET=True)
-    pdb = StringIO(pdb_get(pdb_id))
+    pdb = pdb_get(pdb_id)
+    pdb_io = StringIO(pdb)
 
-    structure = pdb_parser.get_structure(pdb_id, pdb)
+    structure = pdb_parser.get_structure(pdb_id, pdb_io)
     start = int(row["start"])
     end = int(row["end"])
-    sequence = extract_sequence(structure, row_chain, start, end)
+    res_dict = extract_res_dict(structure, row_chain, start, end)
+    if len(res_dict) != (end - start + 1):
+        res_dict.update(extract_remark_465(pdb, row_chain, start, end))
+    sequence = "".join([three_residue_to_one(res_dict[i]) for i in range(start, end + 1)])
     if len(sequence) != (end - start + 1):
         logging.error(
             f"Sequence length mismatch for pdb_id: {pdb_id} pdb_chain: {row_chain} start: {start} end: {end}\n"
