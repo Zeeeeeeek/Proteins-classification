@@ -7,7 +7,8 @@ from io import StringIO
 import threading
 import warnings
 import logging
-
+import re
+import collections
 
 logging.basicConfig(filename=f"log/{datetime.now().strftime('%d_%H_%M_%S')}_preprocessing.log",
                     format="%(levelname)s %(asctime)s,%(msecs)d %(message)s",
@@ -109,7 +110,7 @@ def extract_res_dict(structure, chain_id, start, end):
                 continue
             for residue in chain:
                 if start <= residue.get_full_id()[3][1] <= end:
-                    rest_dict[residue.get_full_id()[3][1]] = residue.get_resname()
+                    rest_dict[str(residue.get_full_id()[3][1])] = residue.get_resname()
                 if residue.get_full_id()[3][1] > end:
                     return rest_dict
     return rest_dict
@@ -129,9 +130,38 @@ def extract_remark_465(pdb_string, chain_id, start, end):
     remark_465 = remark_465[7:]
     res_dict = {}
     for line in remark_465:
-        if line[1] == chain_id and start <= int(line[2]) <= end:
-            res_dict[int(line[2])] = line[0]
+        try:
+            index = int(line[2])
+        except ValueError:  # A combination of atom id and letters may have been used
+            index = int(re.search(r'\d+', line[2]).group())
+        if line[1] == chain_id and start <= index <= end:
+            res_dict[str(line[2])] = line[0]
     return res_dict
+
+
+def custom_key(key):
+    parts = []
+    current_part = ""
+    is_negative = False
+
+    for char in key:
+        if char.isdigit() or (char == '-' and not current_part):
+            # Check for the negative sign at the beginning of the part
+            if char == '-' and not current_part:
+                is_negative = True
+            else:
+                current_part += char
+        else:
+            if current_part:
+                parts.append(int(current_part) * (-1 if is_negative else 1))
+                current_part = ""
+                is_negative = False
+            parts.append(char)
+
+    if current_part:
+        parts.append(int(current_part) * (-1 if is_negative else 1))
+
+    return parts
 
 
 def lambda_sequence(row):
@@ -148,20 +178,15 @@ def lambda_sequence(row):
         remarks = extract_remark_465(pdb, row_chain, start, end)
         res_dict.update(remarks)
     sequence = ""
-    skipped = False  # Logging purposes
-    for i in range(start, end + 1):
-        try:
-            sequence += three_residue_to_one(res_dict[i])
-        except KeyError:
-            skipped = True
-            continue  # At this point missing residues should be ignored as repeatsdb does
-    if skipped:
-        logging.warning(
-            f"At least one residue is missing from pdb file for pdb_id: {pdb_id} pdb_chain: {row_chain} start: {start} end: {end}\n"
-            f"This may not be an error, since the pdb file may not contain all the residues in the sequence\n"
-            f"Sequence: {sequence}\n"
-        )
-    elif len(sequence) != (end - start + 1):
+    try:
+        sorted_res_dict = collections.OrderedDict(sorted(res_dict.items(), key=lambda item: custom_key(item[0])))
+    except TypeError:
+        print(res_dict.items()) # Todo remove
+        print(pdb_id, row_chain, start, end)
+        raise
+    for value in sorted_res_dict.values():
+        sequence += three_residue_to_one(value)
+    if len(sequence) != (end - start + 1):
         logging.error(
             f"Sequence length mismatch for pdb_id: {pdb_id} pdb_chain: {row_chain} start: {start} end: {end}\n"
             f"Expected length: {end - start + 1}, actual length: {len(sequence)}\n"
