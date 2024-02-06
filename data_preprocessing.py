@@ -103,17 +103,28 @@ def three_residue_to_one(residue):
 
 
 def extract_res_dict(structure, chain_id, start, end):
-    rest_dict = {}
+    res_dict = {}
     for model in structure:
         for chain in model:
             if chain.id != chain_id:
                 continue
             for residue in chain:
                 if start <= residue.get_full_id()[3][1] <= end:
-                    rest_dict[str(residue.get_full_id()[3][1])] = residue.get_resname()
+                    if str(residue.get_full_id()[3][1]) not in res_dict.keys():
+                        res_dict[str(residue.get_full_id()[3][1])] = residue.get_resname()
+                    # elif prev_model is not None and prev_model == model:
+                    else:
+                        # An atom's id with number and letter combination may have been used
+                        alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+                        for letter in alphabet:
+                            if str(residue.get_full_id()[3][1]) + letter not in res_dict.keys():
+                                res_dict[str(residue.get_full_id()[3][1]) + letter] = residue.get_resname()
+                                break
                 if residue.get_full_id()[3][1] > end:
-                    return rest_dict
-    return rest_dict
+                    return res_dict
+        if len(res_dict) > 0:  # A model has been found and used, finding other models with the same chain may lead to errors
+            return res_dict
+    return res_dict
 
 
 def extract_remark_465(pdb_string, chain_id, start, end):
@@ -169,6 +180,9 @@ def lambda_sequence(row):
     row_chain = row["pdb_chain"]
     pdb_parser = PDBParser(QUIET=True)
     pdb = pdb_get(pdb_id)
+    if pdb is None or pdb == "":
+        logging.error(f"Empty pdb for {pdb_id}\n")
+        return None
     pdb_io = StringIO(pdb)
     structure = pdb_parser.get_structure(pdb_id, pdb_io)
     start = int(row["start"])
@@ -181,7 +195,7 @@ def lambda_sequence(row):
     try:
         sorted_res_dict = collections.OrderedDict(sorted(res_dict.items(), key=lambda item: custom_key(item[0])))
     except TypeError:
-        print(res_dict.items()) # Todo remove
+        print(res_dict.items())  # Todo remove
         print(pdb_id, row_chain, start, end)
         raise
     for value in sorted_res_dict.values():
