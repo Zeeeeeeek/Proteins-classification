@@ -98,6 +98,8 @@ def three_residue_to_one(residue):
             return "W"
         case "TYR":
             return "Y"
+        case "HOH":
+            return ""
         case _:
             return "X"
 
@@ -120,8 +122,6 @@ def extract_res_dict(structure, chain_id, start, end):
                             if str(residue.get_full_id()[3][1]) + letter not in res_dict.keys():
                                 res_dict[str(residue.get_full_id()[3][1]) + letter] = residue.get_resname()
                                 break
-                if residue.get_full_id()[3][1] > end:
-                    return res_dict
         if len(res_dict) > 0:  # A model has been found and used, finding other models with the same chain may lead to errors
             return res_dict
     return res_dict
