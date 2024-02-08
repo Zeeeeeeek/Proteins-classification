@@ -206,12 +206,7 @@ def lambda_sequence(row):
         remarks = extract_remark_465(pdb, row_chain, start, end)
         res_dict.update(remarks)
     sequence = ""
-    try:
-        sorted_res_dict = collections.OrderedDict(sorted(res_dict.items(), key=lambda item: custom_key(item[0])))
-    except TypeError:
-        print(res_dict.items())  # Todo remove
-        print(pdb_id, row_chain, start, end)
-        raise
+    sorted_res_dict = collections.OrderedDict(sorted(res_dict.items(), key=lambda item: custom_key(item[0])))
     for value in sorted_res_dict.values():
         sequence += three_residue_to_one(value)
     if len(sequence) != (end - start + 1):
