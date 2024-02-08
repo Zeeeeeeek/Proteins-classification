@@ -10,5 +10,15 @@ def repeatsdb_get(query):
 
 
 def pdb_get(pdb_id):
-    r = requests.get(PDB_URL + pdb_id + ".pdb")
-    return r.text
+    return pdb_get_request(pdb_id)
+
+
+def mmCIF_get(pdb_id):
+    return pdb_get_request(pdb_id, format='cif')
+
+
+def pdb_get_request(pdb_id, format='pdb'):
+    r = requests.get(PDB_URL + pdb_id + "." + format)
+    if r.status_code == 200:
+        return r.text
+    return None
