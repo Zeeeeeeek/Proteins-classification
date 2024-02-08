@@ -104,6 +104,21 @@ def three_residue_to_one(residue):
             return "X"
 
 
+def get_sequence_from_mmcif(file_mmcif, id_chain, start, end):
+    parser = MMCIFParser(QUIET=True)
+    structure = parser.get_structure('structure', file_mmcif)
+    residues = []
+    for model in structure:
+        for chain in model:
+            if chain.id == id_chain:
+                ppb = PPBuilder()
+                for pp in ppb.build_peptides(chain):
+                    for res in pp:
+                        if start <= res.id[1] <= end:
+                            residues.append(res.get_resname())
+                return "".join([three_residue_to_one(res) for res in residues])
+
+
 def extract_res_dict(structure, chain_id, start, end):
     res_dict = {}
     for model in structure:
@@ -180,9 +195,8 @@ def lambda_sequence(row):
     row_chain = row["pdb_chain"]
     pdb_parser = PDBParser(QUIET=True)
     pdb = pdb_get(pdb_id)
-    if pdb is None or pdb == "":
-        logging.error(f"Empty pdb for {pdb_id}\n")
-        return None
+    if pdb is None:
+        return get_sequence_from_mmcif(StringIO(mmCIF_get(pdb_id)), row_chain, int(row["start"]), int(row["end"]))
     pdb_io = StringIO(pdb)
     structure = pdb_parser.get_structure(pdb_id, pdb_io)
     start = int(row["start"])
