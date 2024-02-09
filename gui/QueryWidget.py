@@ -4,8 +4,9 @@ from PyQt6.QtWidgets import QLabel, QWidget, QFormLayout, QLineEdit, QCheckBox, 
 
 
 class QueryWidget(QWidget):
-    def __init__(self):
+    def __init__(self, parent_widget=None):
         super().__init__()
+        self.parent_widget = parent_widget
         title_label = QLabel("Query repeatsdb")
         title_label.setAlignment(Qt.AlignmentFlag.AlignHCenter)
         title_label.setStyleSheet("font-size: 24px; font-weight: bold;")
@@ -40,5 +41,16 @@ class QueryWidget(QWidget):
                 raise ValueError("Query cannot be empty")
             self.progress_bar.show()
             self.progress_bar.setRange(0, 0)
+            self.setWidgetEnabled(False)
         except ValueError as e:
             QMessageBox.critical(self, "Error", str(e))
+
+    def setWidgetEnabled(self, enabled: bool):
+        self.query_line_edit.setEnabled(enabled)
+        self.output_line_edit.setEnabled(enabled)
+        self.merge_regions.setEnabled(enabled)
+        self.run_button.setEnabled(enabled)
+
+        if self.parent_widget:
+            for child_widget in self.parent_widget.findChildren(QPushButton):
+                child_widget.setEnabled(enabled)
