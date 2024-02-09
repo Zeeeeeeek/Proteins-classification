@@ -27,20 +27,19 @@ class MainWindow(QMainWindow):
         self.query_button.clicked.connect(self.show_query_widget)
 
         self.stacked_widget = QStackedWidget()
-        self.stacked_widget.addWidget(QWidget())  # Widget vuoto
-        self.stacked_widget.addWidget(self.kmer_widget)
         self.stacked_widget.addWidget(self.query_widget)
+        self.stacked_widget.addWidget(self.kmer_widget)
 
         button_layout = QHBoxLayout()
 
         left_spacer = QSpacerItem(10, 1)
         button_layout.addItem(left_spacer)
 
-        button_layout.addWidget(self.kmer_button)
+        button_layout.addWidget(self.query_button)
 
         button_layout.addSpacing(10)
 
-        button_layout.addWidget(self.query_button)
+        button_layout.addWidget(self.kmer_button)
 
         right_spacer = QSpacerItem(10, 1)
         button_layout.addItem(right_spacer)
@@ -49,20 +48,20 @@ class MainWindow(QMainWindow):
         layout.addWidget(title_label)
         layout.addWidget(subtitle_label)
         layout.addLayout(button_layout)
-        layout.addWidget(self.stacked_widget)  # Widget principale, inizialmente mostrato
+        layout.addWidget(self.stacked_widget)
 
         self.central_widget = QWidget()
         self.central_widget.setLayout(layout)
 
         self.setCentralWidget(self.central_widget)
         self.setWindowTitle("Protein Classifier")
-        self.setFixedSize(400, 300)
+        self.setFixedSize(400, 450)
 
     def show_kmer_widget(self):
         self.stacked_widget.setCurrentIndex(1)
 
     def show_query_widget(self):
-        self.stacked_widget.setCurrentIndex(2)
+        self.stacked_widget.setCurrentIndex(0)
 
 
 if __name__ == "__main__":
