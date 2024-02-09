@@ -1,35 +1,17 @@
 import argparse
-
 import pandas as pd
-
-from api import repeatsdb_get
-import re
-from data_preprocessing import preprocess_from_json
 import time
 
 from kmer import multithread_kmer_count_df
-
-COLON_PATTERN = re.compile(r'^(?:[^:]+:)+[^:]+$')
-
-
-def check_query_string(query_string):
-    if not COLON_PATTERN.match(query_string):
-        raise ValueError("Query string must be in the form of \"field:value\".")
+from controller import run_query, run_kmer_count
 
 
 def handle_query(args):
-    q = "".join(args.query_string)
-    check_query_string(q)
-    q = q.replace("+", "%2B").replace("|", "%7C")
-    q += "%2Breviewed:true&show=entries"
-    preprocess_from_json(repeatsdb_get("query=" + q), args.merge_regions, args.file_name, args.output_format)
+    run_query("".join(args.query_string), args.file_name, args.merge_regions)
 
 
 def handle_kmer(args):
-    input_name = args.input if args.input.endswith(".csv") else args.input + ".csv"
-    df = pd.read_csv("csv/"+input_name)
-    output_name = args.file_name + ".csv" if args.file_name is not None else args.input + "_" + str(args.k) + "_mer.csv"
-    multithread_kmer_count_df(df, args.k).to_csv(output_name, index=False)
+    run_kmer_count(args.input, args.k, args.file_name)
 
 def handle_cli_input():
     parser = argparse.ArgumentParser()
@@ -38,8 +20,6 @@ def handle_cli_input():
     # Query
     parser_query = subparsers.add_parser('query', help='Run a query on the repeatsdb API')
     parser_query.add_argument('query_string', help='Una stringa come argomento', type=str, nargs='+')
-    parser_query.add_argument('-o', '--output', dest='output_format', choices=['json', 'csv'],
-                              help='Output format (default: csv)', default='csv')
     parser_query.add_argument('-n', '--name', dest='file_name', help='File name (default: output)', default='output')
     parser_query.add_argument('-r', '--regions', dest='merge_regions', action='store_true',
                               help='Merge regions (default: false)')
@@ -52,7 +32,7 @@ def handle_cli_input():
     try:
         while True:
 
-            user_input = input("Write a command below (exit or Ctrl + d to stop the cli):\n").strip()
+            user_input = input("Write a command below (exit to stop the cli):\n").strip()
 
             if user_input.lower() == 'exit':
                 break

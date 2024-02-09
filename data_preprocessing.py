@@ -226,7 +226,7 @@ def thread_worker(df):
     df.loc[:, "sequence"] = df.apply(lambda_sequence, axis=1)
 
 
-def preprocess_from_json(json, regions, outputname, format):
+def preprocess_from_json(json, regions):
     df = pd.DataFrame(json).drop(columns_to_ignore, axis=1)
     df = df.astype({
         "start": int,
@@ -247,6 +247,4 @@ def preprocess_from_json(json, regions, outputname, format):
         t.start()
     for t in threads:
         t.join()
-    df = pd.concat(dfs)
-    if format == "csv":
-        df.to_csv("csv/" + outputname + ".csv", index=False)
+    return pd.concat(dfs)

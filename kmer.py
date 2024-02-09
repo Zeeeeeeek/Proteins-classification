@@ -46,7 +46,8 @@ def kmer_count_dataframe(k, df):
     return copy_df
 
 
-def multithread_kmer_count_df(df, k, n_threads=10):
+def multithread_kmer_count_df(df_path, k, n_threads=10):
+    df = pd.read_csv(df_path)
     threads = []
     dfs = split_df_into_n(df, n_threads)
     merged_dfs = []
