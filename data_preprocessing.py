@@ -7,7 +7,6 @@ from io import StringIO
 import threading
 import warnings
 import logging
-import re
 import collections
 
 logging.basicConfig(filename=f"log/{datetime.now().strftime('%d_%H_%M_%S')}_preprocessing.log",
@@ -138,29 +137,6 @@ def extract_res_dict(structure, chain_id, start, end):
     return res_dict
 
 
-def extract_remark_465(pdb_string, chain_id, start, end):
-    remark_465 = []
-    met_remark_465 = False
-    for line in pdb_string.split("\n"):
-        if line.startswith("REMARK 465"):
-            met_remark_465 = True
-            remark_465.append(line.split()[2:])
-        elif met_remark_465:
-            break
-    if len(remark_465) < 7:
-        return {}
-    remark_465 = remark_465[7:]
-    res_dict = {}
-    for line in remark_465:
-        try:
-            index = int(line[2])
-        except ValueError:  # A combination of atom id and letters may have been used
-            index = int(re.search(r'\d+', line[2]).group())
-        if line[1] == chain_id and start <= index <= end:
-            res_dict[str(line[2])] = line[0]
-    return res_dict
-
-
 def custom_key(key):
     parts = []
     current_part = ""
@@ -185,6 +161,17 @@ def custom_key(key):
 
     return parts
 
+def get_missing_residues(structure, chain_id, start, end):
+    missing_residues = {}
+    for res in structure.header["missing_residues"]:
+        if res['chain'] == chain_id and start <= res['ssseq'] <= end:
+            if res['insertion'] is not None:
+                id = str(res['ssseq']) + res['insertion']
+            else:
+                id = str(res['ssseq'])
+            missing_residues[id] = res['res_name']
+    return missing_residues
+
 
 def lambda_sequence(row):
     pdb_id = row["pdb_id"]
@@ -199,7 +186,7 @@ def lambda_sequence(row):
     end = int(row["end"])
     res_dict = extract_res_dict(structure, row_chain, start, end)
     if len(res_dict) != (end - start + 1):
-        remarks = extract_remark_465(pdb, row_chain, start, end)
+        remarks = get_missing_residues(structure, row_chain, start, end)
         res_dict.update(remarks)
     sequence = ""
     sorted_res_dict = collections.OrderedDict(sorted(res_dict.items(), key=lambda item: custom_key(item[0])))
