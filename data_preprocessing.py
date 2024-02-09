@@ -1,8 +1,8 @@
 from datetime import datetime
 
 import pandas as pd
-from api import pdb_get
-from Bio.PDB import PDBParser
+from api import pdb_get, mmCIF_get
+from Bio.PDB import PDBParser, MMCIFParser
 from io import StringIO
 import threading
 import warnings
@@ -107,16 +107,12 @@ def three_residue_to_one(residue):
 def get_sequence_from_mmcif(file_mmcif, id_chain, start, end):
     parser = MMCIFParser(QUIET=True)
     structure = parser.get_structure('structure', file_mmcif)
-    residues = []
-    for model in structure:
-        for chain in model:
-            if chain.id == id_chain:
-                ppb = PPBuilder()
-                for pp in ppb.build_peptides(chain):
-                    for res in pp:
-                        if start <= res.id[1] <= end:
-                            residues.append(res.get_resname())
-                return "".join([three_residue_to_one(res) for res in residues])
+    residues = extract_res_dict(structure, id_chain, start, end)
+    sequence = ""
+    sorted_res_dict = collections.OrderedDict(sorted(residues.items(), key=lambda item: custom_key(item[0])))
+    for value in sorted_res_dict.values():
+        sequence += three_residue_to_one(value)
+    return sequence
 
 
 def extract_res_dict(structure, chain_id, start, end):
