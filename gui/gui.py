@@ -19,7 +19,7 @@ class MainWindow(QMainWindow):
         subtitle_label.setStyleSheet("font-size: 18px;")
 
         self.kmer_widget = KmerCountWidget()
-        self.query_widget = QueryWidget()
+        self.query_widget = QueryWidget(self)
 
         self.kmer_button = QPushButton("Kmer")
         self.kmer_button.clicked.connect(self.show_kmer_widget)
@@ -55,7 +55,7 @@ class MainWindow(QMainWindow):
 
         self.setCentralWidget(self.central_widget)
         self.setWindowTitle("Protein Classifier")
-        self.setFixedSize(400, 450)
+        self.setFixedSize(400, 350)
 
     def show_kmer_widget(self):
         self.stacked_widget.setCurrentIndex(1)
