@@ -124,14 +124,8 @@ def extract_res_dict(structure, chain_id, start, end):
                 if start <= residue.get_full_id()[3][1] <= end:
                     if str(residue.get_full_id()[3][1]) not in res_dict.keys():
                         res_dict[str(residue.get_full_id()[3][1])] = residue.get_resname()
-                    # elif prev_model is not None and prev_model == model:
                     else:
-                        # An atom's id with number and letter combination may have been used
-                        alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-                        for letter in alphabet:
-                            if str(residue.get_full_id()[3][1]) + letter not in res_dict.keys():
-                                res_dict[str(residue.get_full_id()[3][1]) + letter] = residue.get_resname()
-                                break
+                        res_dict[str(residue.get_full_id()[3][1]) + residue.get_full_id()[3][2]] = residue.get_resname()
         if len(res_dict) > 0:  # A model has been found and used, finding other models with the same chain may lead to errors
             return res_dict
     return res_dict
