@@ -70,4 +70,5 @@ __pypackages__/
 .idea/
 
 *.csv
+*log
 
