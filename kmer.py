@@ -42,7 +42,7 @@ def kmer_count_dataframe(k, df):
             kmer_set.add(kmer)
             copy_df.at[index, kmer] = count
     for kmer_col in kmer_set:
-        copy_df[kmer_col] = copy_df[kmer_col].replace(np.nan, 0).astype(int)
+        copy_df[kmer_col] = copy_df[kmer_col].replace(np.nan, 0)
     return copy_df
 
 
@@ -61,5 +61,4 @@ def multithread_kmer_count_df(df, k, n_threads=10):
 
     for t in threads:
         t.join()
-
-    return pd.concat(merged_dfs, ignore_index=True)
+    return pd.concat(merged_dfs, ignore_index=True).replace(np.nan, 0)
