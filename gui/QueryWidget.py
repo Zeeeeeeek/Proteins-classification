@@ -1,5 +1,3 @@
-import time
-
 from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import QLabel, QWidget, QFormLayout, QLineEdit, QCheckBox, QPushButton, QVBoxLayout, QMessageBox, \
     QProgressBar
