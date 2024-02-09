@@ -14,11 +14,11 @@ def pdb_get(pdb_id):
 
 
 def mmCIF_get(pdb_id):
-    return pdb_get_request(pdb_id, format='cif')
+    return pdb_get_request(pdb_id, file_type='cif')
 
 
-def pdb_get_request(pdb_id, format='pdb'):
-    r = requests.get(PDB_URL + pdb_id + "." + format)
+def pdb_get_request(pdb_id, file_type='pdb'):
+    r = requests.get(PDB_URL + pdb_id + "." + file_type)
     if r.status_code == 200:
         return r.text
     return None
