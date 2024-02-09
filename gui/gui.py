@@ -64,10 +64,14 @@ class MainWindow(QMainWindow):
         self.stacked_widget.setCurrentIndex(0)
 
 
-if __name__ == "__main__":
+def run():
     app = QApplication([])
 
     window = MainWindow()
     window.show()
 
     app.exec()
+
+
+if __name__ == "__main__":
+    run()
