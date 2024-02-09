@@ -1,6 +1,10 @@
+import time
+
 from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import QLabel, QWidget, QFormLayout, QLineEdit, QCheckBox, QPushButton, QVBoxLayout, QMessageBox, \
     QProgressBar
+
+from app.controller import run_query
 
 
 class QueryWidget(QWidget):
@@ -35,13 +39,17 @@ class QueryWidget(QWidget):
     def run_button_clicked(self):
         try:
             query_text = self.query_line_edit.text()
-            output_text = self.output_line_edit.text()
-            merge_regions_checked = self.merge_regions.isChecked()
             if not query_text:
                 raise ValueError("Query cannot be empty")
             self.progress_bar.show()
             self.progress_bar.setRange(0, 0)
             self.setWidgetEnabled(False)
+            run_query(
+                query_text,
+                self.output_line_edit.text() if self.output_line_edit.text() else "output",
+                self.merge_regions.isChecked()
+            )
+            QMessageBox.information(self, "Success", "Query completed successfully")
         except ValueError as e:
             QMessageBox.critical(self, "Error", str(e))
 
