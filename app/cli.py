@@ -1,9 +1,7 @@
 import argparse
-import pandas as pd
 import time
 
-from kmer import multithread_kmer_count_df
-from controller import run_query, run_kmer_count
+from app.controller import run_query, run_kmer_count
 
 
 def handle_query(args):

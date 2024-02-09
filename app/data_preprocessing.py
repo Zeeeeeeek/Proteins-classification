@@ -1,7 +1,7 @@
 from datetime import datetime
 
 import pandas as pd
-from api import pdb_get, mmCIF_get
+from app.api import pdb_get, mmCIF_get
 from Bio.PDB import PDBParser, MMCIFParser
 from io import StringIO
 import threading

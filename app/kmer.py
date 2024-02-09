@@ -3,7 +3,7 @@ import threading
 import numpy as np
 import pandas as pd
 
-from data_preprocessing import split_df_into_n
+from app.data_preprocessing import split_df_into_n
 
 
 def kmer_count(k, sequence):
