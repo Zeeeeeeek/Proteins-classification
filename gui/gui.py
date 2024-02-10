@@ -1,5 +1,4 @@
-from PyQt6.QtCore import Qt
-from PyQt6.QtWidgets import QApplication, QMainWindow, QPushButton, QLabel, QVBoxLayout, QWidget, QStackedWidget, \
+from PyQt6.QtWidgets import QApplication, QMainWindow, QPushButton, QVBoxLayout, QWidget, QStackedWidget, \
     QHBoxLayout, QSpacerItem
 
 from gui.KmerWidget import KmerCountWidget
@@ -9,15 +8,6 @@ from gui.QueryWidget import QueryWidget
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
-
-        title_label = QLabel("Classifier")
-        title_label.setAlignment(Qt.AlignmentFlag.AlignHCenter)
-        title_label.setStyleSheet("font-size: 24px; font-weight: bold;")
-
-        subtitle_label = QLabel("Select an option")
-        subtitle_label.setAlignment(Qt.AlignmentFlag.AlignHCenter)
-        subtitle_label.setStyleSheet("font-size: 18px;")
-
         self.kmer_widget = KmerCountWidget()
         self.query_widget = QueryWidget(self)
 
@@ -45,8 +35,6 @@ class MainWindow(QMainWindow):
         button_layout.addItem(right_spacer)
 
         layout = QVBoxLayout()
-        layout.addWidget(title_label)
-        layout.addWidget(subtitle_label)
         layout.addLayout(button_layout)
         layout.addWidget(self.stacked_widget)
 
