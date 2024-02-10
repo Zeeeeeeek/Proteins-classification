@@ -72,6 +72,7 @@ class QueryWidget(QWidget):
         self.output_line_edit.setEnabled(enabled)
         self.merge_regions.setEnabled(enabled)
         self.run_button.setEnabled(enabled)
+        self.n_threads_line_edit.setEnabled(enabled)
 
         if self.parent_widget:
             for child_widget in self.parent_widget.findChildren(QPushButton):
