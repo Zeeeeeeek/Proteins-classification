@@ -45,7 +45,8 @@ class QueryWidget(QWidget):
             run_query(
                 query_text,
                 self.output_line_edit.text() if self.output_line_edit.text() else "output",
-                self.merge_regions.isChecked()
+                self.merge_regions.isChecked(),
+                5
             )
             QMessageBox.information(self, "Success", "Query completed successfully")
         except ValueError as e:

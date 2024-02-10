@@ -1,9 +1,9 @@
 from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import QApplication, QMainWindow, QPushButton, QLabel, QVBoxLayout, QWidget, QStackedWidget, \
-    QHBoxLayout, QSpacerItem, QSizePolicy
+    QHBoxLayout, QSpacerItem
 
-from KmerWidget import KmerCountWidget
-from QueryWidget import QueryWidget
+from gui.KmerWidget import KmerCountWidget
+from gui.QueryWidget import QueryWidget
 
 
 class MainWindow(QMainWindow):
@@ -72,6 +72,3 @@ def run():
 
     app.exec()
 
-
-if __name__ == "__main__":
-    run()
