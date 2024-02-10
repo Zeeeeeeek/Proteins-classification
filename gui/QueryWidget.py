@@ -8,6 +8,7 @@ from gui.QueryThread import QueryThread
 class QueryWidget(QWidget):
     def __init__(self, parent_widget=None):
         super().__init__()
+        self.thread = None
         self.parent_widget = parent_widget
         title_label = QLabel("Query repeatsdb")
         title_label.setAlignment(Qt.AlignmentFlag.AlignHCenter)
@@ -21,7 +22,11 @@ class QueryWidget(QWidget):
         self.query_line_edit = QLineEdit()
         layout.addRow("Query*", self.query_line_edit)
         self.output_line_edit = QLineEdit()
+        self.output_line_edit.setPlaceholderText("output")
         layout.addRow("Output file name", self.output_line_edit)
+        self.n_threads_line_edit = QLineEdit()
+        self.n_threads_line_edit.setPlaceholderText("5")
+        layout.addRow("Number of threads", self.n_threads_line_edit)
         self.merge_regions = QCheckBox()
         self.merge_regions.setChecked(True)
         layout.addRow("Merge regions", self.merge_regions)
@@ -42,12 +47,11 @@ class QueryWidget(QWidget):
             self.progress_bar.show()
             self.progress_bar.setRange(0, 0)
             self.setWidgetEnabled(False)
-
             self.thread = QueryThread(
                 query_text,
-                self.output_line_edit.text(),
+                self.output_line_edit.text() if self.output_line_edit.text() else "output",
                 self.merge_regions.isChecked(),
-                5
+                int(self.n_threads_line_edit.text()) if self.n_threads_line_edit.text() else 5
             )
             self.thread.finished.connect(self.on_query_finished)
             self.thread.start()
@@ -58,6 +62,10 @@ class QueryWidget(QWidget):
         QMessageBox.information(self, "Success", "Query completed successfully")
         self.progress_bar.hide()
         self.setWidgetEnabled(True)
+        self.thread = None
+        self.query_line_edit.clear()
+        self.output_line_edit.clear()
+        self.n_threads_line_edit.clear()
 
     def setWidgetEnabled(self, enabled: bool):
         self.query_line_edit.setEnabled(enabled)
