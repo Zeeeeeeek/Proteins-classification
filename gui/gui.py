@@ -8,7 +8,7 @@ from gui.QueryWidget import QueryWidget
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.kmer_widget = KmerCountWidget()
+        self.kmer_widget = KmerCountWidget(self)
         self.query_widget = QueryWidget(self)
 
         self.kmer_button = QPushButton("Kmer")
