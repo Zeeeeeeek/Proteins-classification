@@ -1,18 +1,10 @@
-from datetime import datetime
-
 import pandas as pd
 from app.api import pdb_get, mmCIF_get
 from Bio.PDB import PDBParser, MMCIFParser
 from io import StringIO
 import threading
 import warnings
-import logging
 import collections
-
-logging.basicConfig(filename=f"log/{datetime.now().strftime('%d_%H_%M_%S')}_preprocessing.log",
-                    format="%(levelname)s %(asctime)s,%(msecs)d %(message)s",
-                    datefmt="%H:%M:%S",
-                    filemode="w")
 
 warnings.filterwarnings("ignore")
 
@@ -186,12 +178,6 @@ def lambda_sequence(row):
     sorted_res_dict = collections.OrderedDict(sorted(res_dict.items(), key=lambda item: custom_key(item[0])))
     for value in sorted_res_dict.values():
         sequence += three_residue_to_one(value)
-    if len(sequence) != (end - start + 1):
-        logging.error(
-            f"Sequence length mismatch for pdb_id: {pdb_id} pdb_chain: {row_chain} start: {start} end: {end}\n"
-            f"Expected length: {end - start + 1}, actual length: {len(sequence)}\n"
-            f"Sequence: {sequence}\n"
-        )
     return sequence
 
 
