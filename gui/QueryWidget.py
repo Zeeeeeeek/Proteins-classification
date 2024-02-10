@@ -2,7 +2,7 @@ from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import QLabel, QWidget, QFormLayout, QLineEdit, QCheckBox, QPushButton, QVBoxLayout, QMessageBox, \
     QProgressBar
 
-from app.controller import run_query
+from gui.QueryThread import QueryThread
 
 
 class QueryWidget(QWidget):
@@ -42,15 +42,22 @@ class QueryWidget(QWidget):
             self.progress_bar.show()
             self.progress_bar.setRange(0, 0)
             self.setWidgetEnabled(False)
-            run_query(
+
+            self.thread = QueryThread(
                 query_text,
-                self.output_line_edit.text() if self.output_line_edit.text() else "output",
+                self.output_line_edit.text(),
                 self.merge_regions.isChecked(),
                 5
             )
-            QMessageBox.information(self, "Success", "Query completed successfully")
+            self.thread.finished.connect(self.on_query_finished)
+            self.thread.start()
         except ValueError as e:
             QMessageBox.critical(self, "Error", str(e))
+
+    def on_query_finished(self):
+        QMessageBox.information(self, "Success", "Query completed successfully")
+        self.progress_bar.hide()
+        self.setWidgetEnabled(True)
 
     def setWidgetEnabled(self, enabled: bool):
         self.query_line_edit.setEnabled(enabled)
