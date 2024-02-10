@@ -5,7 +5,7 @@ from app.controller import run_query, run_kmer_count
 
 
 def handle_query(args):
-    run_query("".join(args.query_string), args.file_name, args.merge_regions)
+    run_query("".join(args.query_string), args.file_name, args.merge_regions, args.n_threads)
 
 
 def handle_kmer(args):
@@ -17,10 +17,12 @@ def handle_cli_input():
 
     # Query
     parser_query = subparsers.add_parser('query', help='Run a query on the repeatsdb API')
-    parser_query.add_argument('query_string', help='Una stringa come argomento', type=str, nargs='+')
+    parser_query.add_argument('query_string', help='Query string for repeatsdb api', type=str, nargs='+')
     parser_query.add_argument('-n', '--name', dest='file_name', help='File name (default: output)', default='output')
     parser_query.add_argument('-r', '--regions', dest='merge_regions', action='store_true',
                               help='Merge regions (default: false)')
+    parser_query.add_argument('-t', '--threads', dest='n_threads', help='Number of threads (default: 5)', type=int,
+                              default=5)
     # Kmer count
     parser_kmer = subparsers.add_parser('kmer', help='Count kmers in a dataset')
     parser_kmer.add_argument('input', help='Input file name', type=str)

@@ -226,7 +226,7 @@ def thread_worker(df):
     df.loc[:, "sequence"] = df.apply(lambda_sequence, axis=1)
 
 
-def preprocess_from_json(json, regions):
+def preprocess_from_json(json, regions, n_threads=5):
     df = pd.DataFrame(json).drop(columns_to_ignore, axis=1)
     df = df.astype({
         "start": int,
@@ -240,7 +240,7 @@ def preprocess_from_json(json, regions):
     df = remove_rows_with_errors(df)
     df = integrate_regions(df) if regions else differentiate_units_ids(df)
     threads = []
-    dfs = split_df_into_n(df, 20)
+    dfs = split_df_into_n(df, n_threads)
     for d in dfs:
         t = threading.Thread(target=thread_worker, args=(d,))
         threads.append(t)
