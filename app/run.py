@@ -1,6 +1,6 @@
 import os
 
-from app.cli import handle_cli_input
+from cli import handle_cli_input
 
 
 def main():

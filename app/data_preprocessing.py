@@ -1,5 +1,5 @@
 import pandas as pd
-from app.api import pdb_get, mmCIF_get
+from api import pdb_get, mmCIF_get
 from Bio.PDB import PDBParser, MMCIFParser
 from io import StringIO
 import threading

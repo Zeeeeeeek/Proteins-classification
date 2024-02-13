@@ -1,7 +1,7 @@
 import argparse
 import time
 
-from app.controller import run_query, run_kmer_count
+from controller import run_query, run_kmer_count
 
 
 def handle_query(args):
