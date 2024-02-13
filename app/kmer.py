@@ -32,7 +32,7 @@ def kmer_count_dataframe(k, df):
     :param df: pd.DataFrame
     :return: pd.DataFrame
     """
-    copy_df = df[["repeatsdb_id", "sequence"]].copy()
+    copy_df = df[["region_id", "class_topology_fold_clan", "sequence"]].copy()
     kmer_set = set()
     for index, row in df.iterrows():
         if row['sequence'] is None or row['sequence'] == "":

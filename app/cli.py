@@ -11,6 +11,21 @@ def handle_query(args):
 def handle_kmer(args):
     run_kmer_count(args.input, args.k, args.file_name)
 
+def handle_command(args):
+    try:
+        start = time.time()
+        match args.command:
+            case 'query':
+                handle_query(args)
+            case 'kmer':
+                handle_kmer(args)
+            case _:
+                print("Invalid command")
+        elapsed = time.time() - start
+        print(f"Elapsed time: {elapsed:.5f} seconds")
+    except ValueError as e:
+        print(e)
+
 def handle_cli_input():
     parser = argparse.ArgumentParser()
     subparsers = parser.add_subparsers(title='commands', dest='command')
@@ -29,29 +44,19 @@ def handle_cli_input():
     parser_kmer.add_argument('k', help='Kmer length', type=int, nargs='?', default=0)
     parser_kmer.add_argument('-n', '--name', dest='file_name', help='File name (default: input_k_mer)', default=None,
                              type=str)
+    command_queue = []
     try:
         while True:
-
-            user_input = input("Write a command below (exit to stop the cli):\n").strip()
-
-            if user_input.lower() == 'exit':
-                break
-
-            args = parser.parse_args(user_input.split())
-
-            try:
-                start = time.time()
-                match args.command:
-                    case 'query':
-                        handle_query(args)
-                    case 'kmer':
-                        handle_kmer(args)
-                    case _:
-                        print("Invalid command")
-                elapsed = time.time() - start
-                print(f"Elapsed time: {elapsed:.5f} seconds")
-            except ValueError as e:
-                print(e)
+            if not command_queue:
+                user_input = input("Write a command below (exit to stop the cli):\n").strip()
+                if user_input.lower() == 'exit':
+                    break
+                commands = user_input.split("&&")
+                args = parser.parse_args(commands[0].split())
+                command_queue = commands[1:]
+            else:
+                args = parser.parse_args(command_queue.pop(0).split())
+            handle_command(args)
 
     except EOFError:
         print("\nExiting")
