@@ -9,7 +9,7 @@ def handle_query(args):
 
 
 def handle_kmer(args):
-    run_kmer_count(args.input, args.k, args.file_name)
+    run_kmer_count(args.input, args.k, args.file_name, args.n_threads)
 
 def handle_command(args):
     try:
@@ -44,6 +44,8 @@ def handle_cli_input():
     parser_kmer.add_argument('k', help='Kmer length', type=int, nargs='?', default=0)
     parser_kmer.add_argument('-n', '--name', dest='file_name', help='File name (default: input_k_mer)', default=None,
                              type=str)
+    parser_kmer.add_argument('-t', '--threads', dest='n_threads', help='Number of threads (default: 5)', type=int,
+                             default=5)
     command_queue = []
     try:
         while True:
