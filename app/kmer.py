@@ -45,7 +45,7 @@ def kmer_count_dataframe(k, df):
             kmer_set.add(kmer)
             copy_df.at[index, kmer] = count
     for kmer_col in kmer_set:
-        copy_df[kmer_col] = copy_df[kmer_col].astype(np.uint16).fillna(0)
+        copy_df[kmer_col] = copy_df[kmer_col].fillna(0).astype(np.uint16)
     return copy_df
 
 
