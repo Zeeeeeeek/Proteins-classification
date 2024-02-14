@@ -1,3 +1,4 @@
+import os
 import threading
 
 import numpy as np
@@ -46,20 +47,39 @@ def kmer_count_dataframe(k, df):
     return copy_df
 
 
-def multithread_kmer_count_df(df_path, k, n_threads=5):
+def multithread_kmer_count_df(df_path, k, output_path, n_threads=5):
     df = pd.read_csv(df_path)
-    threads = []
-    dfs = split_df_into_n(df, n_threads)
-    merged_dfs = []
+    dfs = split_df_into_n(df, 5 if n_threads < 5 else n_threads)
 
     def worker_function(sdf, worker_k, result_list):
         result_list.append(kmer_count_dataframe(worker_k, sdf))
 
+    count = 0
     for sub_df in dfs:
-        t = threading.Thread(target=worker_function, args=(sub_df, k, merged_dfs))
-        threads.append(t)
-        t.start()
+        chunks = split_df_into_n(sub_df, 5 if n_threads < 5 else n_threads)
+        chunk_threads = []
+        merged_dfs = []
+        for chunk in chunks:
+            t = threading.Thread(target=worker_function, args=(chunk, k, merged_dfs))
+            chunk_threads.append(t)
+            t.start()
+        for t in chunk_threads:
+            t.join()
+        merged_df = pd.concat(merged_dfs, ignore_index=True)
+        merged_df.to_csv(f"cache_{count}.csv", index=False)
+        count += 1
+    merge_csv_files(output_path, count, 1000)
 
-    for t in threads:
-        t.join()
-    return pd.concat(merged_dfs, ignore_index=True).replace(np.nan, 0)
+
+def merge_csv_files(output_path, count, CHUNK_SIZE):
+    for i in range(count):
+        chunk_container = pd.read_csv(f"cache_{i}.csv", chunksize=CHUNK_SIZE)
+        for chunk in chunk_container:
+            chunk = chunk.fillna(0)
+            if i == 0:
+                chunk.to_csv(f"{output_path}.csv", mode='w', index=False)
+            else:
+                chunk.to_csv(f"{output_path}.csv", mode='a', header=False, index=False)
+
+    for i in range(count):
+        os.remove(f"cache_{i}.csv")
