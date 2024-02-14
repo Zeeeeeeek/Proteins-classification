@@ -5,7 +5,9 @@ import numpy as np
 import pandas as pd
 
 from data_preprocessing import split_df_into_n
+import logging
 
+logging.basicConfig(filename='kmer.log', level=logging.INFO, format='%(asctime)s - %(message)s', datefmt='%d-%b-%y %H:%M:%S')
 
 def kmer_count(k, sequence):
     """
@@ -43,7 +45,7 @@ def kmer_count_dataframe(k, df):
             kmer_set.add(kmer)
             copy_df.at[index, kmer] = count
     for kmer_col in kmer_set:
-        copy_df[kmer_col] = copy_df[kmer_col].replace(np.nan, 0)
+        copy_df[kmer_col] = copy_df[kmer_col].astype(np.uint16)
     return copy_df
 
 
@@ -59,7 +61,11 @@ def multithread_kmer_count_df(df_path, k, output_path, n_threads=5):
         chunks = split_df_into_n(sub_df, 5 if n_threads < 5 else n_threads)
         chunk_threads = []
         merged_dfs = []
+        logging.info(f"Threads count: {len(chunks)} merged_dfs count: {len(merged_dfs)}")
+        logging.info(f"Subdf shape: {sub_df.shape}")
         for chunk in chunks:
+            logging.info(f"Processing chunk {count}")
+            logging.info(f"Chunk shape: {chunk.shape}")
             t = threading.Thread(target=worker_function, args=(chunk, k, merged_dfs))
             chunk_threads.append(t)
             t.start()
@@ -67,15 +73,16 @@ def multithread_kmer_count_df(df_path, k, output_path, n_threads=5):
             t.join()
         merged_df = pd.concat(merged_dfs, ignore_index=True)
         merged_df.to_csv(f"cache_{count}.csv", index=False)
+        logging.info(f"Subdf {count} processed")
         count += 1
-    merge_csv_files(output_path, count, 1000)
+    logging.info(f"Merging {count} files")
+    merge_csv_files(output_path, count, 100)
 
 
 def merge_csv_files(output_path, count, CHUNK_SIZE):
     for i in range(count):
         chunk_container = pd.read_csv(f"cache_{i}.csv", chunksize=CHUNK_SIZE)
         for chunk in chunk_container:
-            chunk = chunk.fillna(0)
             if i == 0:
                 chunk.to_csv(f"{output_path}.csv", mode='w', index=False)
             else:
