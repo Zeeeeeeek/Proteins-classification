@@ -8,7 +8,7 @@ from data_preprocessing import split_df_into_n
 import logging
 
 logging.basicConfig(filename='kmer.log', level=logging.INFO, format='%(asctime)s - %(message)s',
-                    datefmt='%d-%b-%y %H:%M:%S')
+                    datefmt='%d-%b-%y %H:%M:%S', filemode='w')
 
 
 def kmer_count(k, sequence):
