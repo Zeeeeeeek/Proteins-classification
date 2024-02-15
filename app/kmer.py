@@ -81,4 +81,4 @@ def kmer_count_chunk(df, output_path, k, n_threads=5):
     for t in chunk_threads:
         t.join()
     merged_df = pd.concat(merged_dfs, ignore_index=True)
-    merged_df.to_json(output_path, index=False, mode="a")
+    merged_df.to_json(output_path, index=False, mode="a", orient="records", lines=True)
