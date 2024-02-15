@@ -1,4 +1,3 @@
-import os
 import threading
 
 import numpy as np
@@ -51,44 +50,35 @@ def kmer_count_dataframe(k, df):
     return copy_df
 
 
-def multithread_kmer_count_df(df_path, k, output_path, n_threads=5):
-    df = pd.read_csv(df_path)
-    dfs = split_df_into_n(df, 5 if n_threads < 5 else n_threads)
-    count = 0
-    for index, sub_df in enumerate(dfs):
-        ext(sub_df, index, k, n_threads)
-        count = index + 1
-    logging.info(f"Merging {count} files")
-    merge_csv_files(output_path, count, 100)
+def multithread_kmer_count_df(df_path, k: int, output_path, n_threads: int = 5):
+    if k <= 0:
+        raise ValueError("k must be a positive integer")
+    base = 100
+    if k < 5:
+        size = base + 2 ** (12 - k)
+    elif 5 <= k < 9:
+        size = base + 2 ** (10 - k)
+    else:
+        size = base + 2 ** (14 - k) if (14 - k) > 0 else base
+    chunk_container = pd.read_csv(df_path, chunksize=size)
+    for chunk in chunk_container:
+        kmer_count_chunk(chunk, output_path, k, n_threads)
 
 
-def ext(df, df_index, k, n_threads=5):
+def kmer_count_chunk(df, output_path, k, n_threads=5):
     def worker_function(sdf, worker_k, result_list):
         result_list.append(kmer_count_dataframe(worker_k, sdf))
 
-    chunks = split_df_into_n(df, 5 if n_threads < 5 else n_threads)
+    splits = split_df_into_n(df, n_threads)
     chunk_threads = []
     merged_dfs = []
     logging.info(f"Subdf shape: {df.shape}")
-    for chunk in chunks:
-        logging.info(f"Chunk shape: {chunk.shape}")
-        t = threading.Thread(target=worker_function, args=(chunk, k, merged_dfs))
+    for split in splits:
+        logging.info(f"Chunk shape: {split.shape}")
+        t = threading.Thread(target=worker_function, args=(split, k, merged_dfs))
         chunk_threads.append(t)
         t.start()
     for t in chunk_threads:
         t.join()
     merged_df = pd.concat(merged_dfs, ignore_index=True)
-    merged_df.to_csv(f"cache_{df_index}.csv", index=False)
-    logging.info(f"Cached subdf {df_index}")
-
-def merge_csv_files(output_path, count, CHUNK_SIZE):
-    for i in range(count):
-        chunk_container = pd.read_csv(f"cache_{i}.csv", chunksize=CHUNK_SIZE)
-        for chunk in chunk_container:
-            if i == 0:
-                chunk.to_csv(f"{output_path}.csv", mode='w', index=False)
-            else:
-                chunk.to_csv(f"{output_path}.csv", mode='a', header=False, index=False)
-
-    for i in range(count):
-        os.remove(f"cache_{i}.csv")
+    merged_df.to_json(output_path, index=False, mode="a")
