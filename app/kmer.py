@@ -50,7 +50,7 @@ def kmer_count_dataframe(k, df):
         for kmer, count in kmer_dict.items():
             kmer_set.add(kmer)
             copy_df.at[index, kmer] = count if count > 0 else np.nan
-    kmer_col_type = np.uint16 if k > 7 else np.uint8
+    kmer_col_type = np.uint16 if k > 6 else np.uint8
     for kmer_col in kmer_set:
         copy_df[kmer_col] = copy_df[kmer_col].astype(pd.SparseDtype(kmer_col_type, np.nan))
     return copy_df
