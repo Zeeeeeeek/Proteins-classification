@@ -65,5 +65,6 @@ def handle_cli_input():
                 args = parser.parse_args(command_queue.pop(0).split())
             handle_command(args)
 
-    except EOFError:
+    except (EOFError, KeyboardInterrupt):
         print("\nExiting")
+        exit(0)
