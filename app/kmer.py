@@ -1,6 +1,6 @@
 import shutil
 import threading
-
+from memory_profiler import profile
 import numpy as np
 import pandas as pd
 import os
@@ -15,6 +15,7 @@ def memory_usage_df(df):
     mem = df.memory_usage(deep=True).sum() / (1024 ** 2)
     return str(mem)
 
+@profile
 def kmer_count(k, sequence):
     """
     Count the number of k-mers in a sequence.
@@ -33,7 +34,7 @@ def kmer_count(k, sequence):
             kmer_dict[kmer] = 1
     return kmer_dict
 
-
+@profile
 def kmer_count_dataframe(k, df):
     """
     Count the number of k-mers in a dataframe.
@@ -55,7 +56,6 @@ def kmer_count_dataframe(k, df):
         copy_df[kmer_col] = copy_df[kmer_col].astype(pd.SparseDtype(kmer_col_type, np.nan))
     return copy_df
 
-
 def merge_temp_files(length, output_path, cache_path):
     for i in range(length):
         df = pd.read_hdf(f"{cache_path}/temp_{i}.h5", index=False, key="df")
@@ -69,7 +69,7 @@ def merge_temp_files(length, output_path, cache_path):
         del df
     shutil.rmtree(cache_path)
 
-
+@profile
 def multithread_kmer_count_df(df_path, k: int, output_path, n_threads: int = 5):
     if k <= 0:
         raise ValueError("k must be a positive integer")
@@ -99,7 +99,7 @@ def multithread_kmer_count_df(df_path, k: int, output_path, n_threads: int = 5):
     out.to_csv(output_path, index=False)
     #merge_temp_files(length, output_path, cache_path)
 
-
+@profile
 def kmer_count_chunk(df, k, index, cache_path, n_threads=5):
     def worker_function(sdf, worker_k, result_list):
         result_list.append(kmer_count_dataframe(worker_k, sdf))
