@@ -12,7 +12,7 @@ logging.basicConfig(filename='kmer.log', level=logging.INFO, format='%(asctime)s
                     datefmt='%d-%b-%y %H:%M:%S', filemode='w')
 
 def memory_usage_df(df):
-    mem = round(df.memory_usage().sum() * 0.000001, 3)
+    mem = df.memory_usage(deep=True).sum() / (1024 ** 2)
     return str(mem)
 
 def kmer_count(k, sequence):
