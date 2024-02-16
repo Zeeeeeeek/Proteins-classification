@@ -5,6 +5,7 @@ import pandas as pd
 
 from data_preprocessing import split_df_into_n
 import logging
+import sqlite3
 
 logging.basicConfig(filename='kmer.log', level=logging.INFO, format='%(asctime)s - %(message)s',
                     datefmt='%d-%b-%y %H:%M:%S', filemode='w')
@@ -60,15 +61,16 @@ def multithread_kmer_count_df(df_path, k: int, output_path, n_threads: int = 5):
         size = base + 2 ** (10 - k)
     else:
         size = base + 2 ** (14 - k) if (14 - k) > 0 else base
+    conn = sqlite3.connect('./temp_db.sqlite')
     chunk_container = pd.read_csv(df_path, chunksize=size)
-    output_df = pd.DataFrame()
-    for chunk in chunk_container:
-        d = kmer_count_chunk(chunk, k, n_threads)
-        output_df = pd.concat([output_df, d], ignore_index=True)
-    output_df.to_csv(output_path, index=False, mode="w")
+    for index, chunk in enumerate(chunk_container):
+        kmer_count_chunk(chunk, index, conn, k, n_threads)
+    df = pd.read_sql_query("SELECT * FROM " + " UNION ALL SELECT * FROM " \
+                           .join([f"table_{i}" for i in range(len(chunk_container))]), conn)
+    df.to_csv(output_path, index=False)
 
 
-def kmer_count_chunk(df, k, n_threads=5):
+def kmer_count_chunk(df, k, index, conn, n_threads=5):
     def worker_function(sdf, worker_k, result_list):
         result_list.append(kmer_count_dataframe(worker_k, sdf))
 
@@ -83,5 +85,6 @@ def kmer_count_chunk(df, k, n_threads=5):
         t.start()
     for t in chunk_threads:
         t.join()
-    return pd.concat(merged_dfs, ignore_index=True)
-    #merged_df.to_json(output_path, index=False, mode="a", orient="records", lines=True)
+    merged = pd.concat(merged_dfs, ignore_index=True)
+    merged.to_sql(f'kmer_{index}', conn, index=False)
+    logging.info(f"Saved chunk {index} to db")
