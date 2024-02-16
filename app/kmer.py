@@ -6,7 +6,6 @@ import os
 
 from data_preprocessing import split_df_into_n
 import logging
-import sqlite3
 
 logging.basicConfig(filename='kmer.log', level=logging.INFO, format='%(asctime)s - %(message)s',
                     datefmt='%d-%b-%y %H:%M:%S', filemode='w')
@@ -52,6 +51,20 @@ def kmer_count_dataframe(k, df):
     return copy_df
 
 
+def merge_temp_files(length, output_path):
+    for i in range(length):
+        df = pd.read_hdf(f"temp_{i}.h5", index=False, key="df")
+        if i == 0:
+            df.to_csv(output_path, index=False)
+        else:
+            left = pd.read_csv(output_path)
+            merged = pd.concat([left, df], ignore_index=True)
+            merged.to_csv(output_path, index=False)
+            del left, merged
+        os.remove(f"temp_{i}.h5")
+        del df
+
+
 def multithread_kmer_count_df(df_path, k: int, output_path, n_threads: int = 5):
     if k <= 0:
         raise ValueError("k must be a positive integer")
@@ -62,20 +75,15 @@ def multithread_kmer_count_df(df_path, k: int, output_path, n_threads: int = 5):
         size = base + 2 ** (10 - k)
     else:
         size = base + 2 ** (14 - k) if (14 - k) > 0 else base
-    conn = sqlite3.connect('temp_db.sqlite')
     chunk_container = pd.read_csv(df_path, chunksize=size)
     length = 0
     for index, chunk in enumerate(chunk_container):
-        kmer_count_chunk(chunk, k, index, conn, n_threads)
+        kmer_count_chunk(chunk, k, index, n_threads)
         length = index + 1
-    df = pd.read_sql_query("SELECT * FROM " + " UNION ALL SELECT * FROM " \
-                           .join([f"kmer_{i}" for i in range(length)]), conn)
-    df.to_csv(output_path, index=False)
-    conn.close()
-    os.remove('temp_db.sqlite')
+    merge_temp_files(length, output_path)
 
 
-def kmer_count_chunk(df, k, index, conn, n_threads=5):
+def kmer_count_chunk(df, k, index, n_threads=5):
     def worker_function(sdf, worker_k, result_list):
         result_list.append(kmer_count_dataframe(worker_k, sdf))
 
@@ -91,5 +99,5 @@ def kmer_count_chunk(df, k, index, conn, n_threads=5):
     for t in chunk_threads:
         t.join()
     merged = pd.concat(merged_dfs, ignore_index=True)
-    merged.to_sql(f'kmer_{index}', conn, index=False)
-    logging.info(f"Saved chunk {index} to db")
+    merged.to_hdf(f"temp_{index}.h5", index=False, key="df", mode="w")
+    logging.info(f"Saved chunk {index}")
