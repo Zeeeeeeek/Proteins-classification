@@ -1,3 +1,4 @@
+import shutil
 import threading
 
 import numpy as np
@@ -10,6 +11,9 @@ import logging
 logging.basicConfig(filename='kmer.log', level=logging.INFO, format='%(asctime)s - %(message)s',
                     datefmt='%d-%b-%y %H:%M:%S', filemode='w')
 
+def memory_usage_df(df):
+    mem = round(df.memory_usage().sum() * 0.000001, 3)
+    return str(mem)
 
 def kmer_count(k, sequence):
     """
@@ -45,15 +49,15 @@ def kmer_count_dataframe(k, df):
         kmer_dict = kmer_count(k, row['sequence'])
         for kmer, count in kmer_dict.items():
             kmer_set.add(kmer)
-            copy_df.at[index, kmer] = count
+            copy_df.at[index, kmer] = count if count > 0 else np.nan
     for kmer_col in kmer_set:
-        copy_df[kmer_col] = copy_df[kmer_col].fillna(0).astype(np.uint16)
+        copy_df[kmer_col] = copy_df[kmer_col].astype(pd.SparseDtype(np.uint16, np.nan))
     return copy_df
 
 
-def merge_temp_files(length, output_path):
+def merge_temp_files(length, output_path, cache_path):
     for i in range(length):
-        df = pd.read_hdf(f"temp_{i}.h5", index=False, key="df")
+        df = pd.read_hdf(f"{cache_path}/temp_{i}.h5", index=False, key="df")
         if i == 0:
             df.to_csv(output_path, index=False)
         else:
@@ -61,29 +65,40 @@ def merge_temp_files(length, output_path):
             merged = pd.concat([left, df], ignore_index=True)
             merged.to_csv(output_path, index=False)
             del left, merged
-        os.remove(f"temp_{i}.h5")
         del df
+    shutil.rmtree(cache_path)
 
 
 def multithread_kmer_count_df(df_path, k: int, output_path, n_threads: int = 5):
     if k <= 0:
         raise ValueError("k must be a positive integer")
     base = 100
-    if k < 5:
-        size = base + 2 ** (12 - k)
-    elif 5 <= k < 9:
+    if k <= 5:
+        size = 1000
+    elif 5 < k < 9:
         size = base + 2 ** (10 - k)
     else:
-        size = base + 2 ** (14 - k) if (14 - k) > 0 else base
+        size = base
     chunk_container = pd.read_csv(df_path, chunksize=size)
+    cache_path = os.path.join(os.path.dirname(output_path), "/cache")
+    #if not os.path.exists(cache_path):
+    #    os.makedirs(cache_path)
+    #else:
+    #    for file in os.listdir(cache_path):
+    #        os.remove(os.path.join(cache_path, file))
     length = 0
+    output_df = pd.DataFrame()
     for index, chunk in enumerate(chunk_container):
-        kmer_count_chunk(chunk, k, index, n_threads)
+        kdf = kmer_count_chunk(chunk, k, index, cache_path, n_threads)
+        output_df = pd.concat([output_df, kdf], ignore_index=True)
+        logging.info(f"Output_df memory usage: {memory_usage_df(output_df)} MB")
+        logging.info(f"Kdf memory usage: {memory_usage_df(kdf)} MB")
         length = index + 1
-    merge_temp_files(length, output_path)
+    output_df.to_csv(output_path, index=False)
+    #merge_temp_files(length, output_path, cache_path)
 
 
-def kmer_count_chunk(df, k, index, n_threads=5):
+def kmer_count_chunk(df, k, index, cache_path, n_threads=5):
     def worker_function(sdf, worker_k, result_list):
         result_list.append(kmer_count_dataframe(worker_k, sdf))
 
@@ -98,6 +113,6 @@ def kmer_count_chunk(df, k, index, n_threads=5):
         t.start()
     for t in chunk_threads:
         t.join()
-    merged = pd.concat(merged_dfs, ignore_index=True)
-    merged.to_hdf(f"temp_{index}.h5", index=False, key="df", mode="w")
-    logging.info(f"Saved chunk {index}")
+    return pd.concat(merged_dfs, ignore_index=True)
+    #merged.to_hdf(f"{cache_path}/temp_{index}.h5", index=False, key="df", mode="w")
+    #logging.info(f"Saved chunk {index}")
