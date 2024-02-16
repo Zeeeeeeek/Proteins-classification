@@ -19,6 +19,9 @@ def handle_command(args):
                 handle_query(args)
             case 'kmer':
                 handle_kmer(args)
+            case 'exit':
+                print("Exiting")
+                exit(0)
             case _:
                 print("Invalid command")
         elapsed = time.time() - start
@@ -46,13 +49,14 @@ def handle_cli_input():
                              type=str)
     parser_kmer.add_argument('-t', '--threads', dest='n_threads', help='Number of threads (default: 5)', type=int,
                              default=5)
+
+    # Exit
+    subparsers.add_parser('exit', help='Exit the cli')
     command_queue = []
     try:
         while True:
             if not command_queue:
                 user_input = input("Write a command below (exit to stop the cli):\n").strip()
-                if user_input.lower() == 'exit':
-                    break
                 commands = user_input.split("&&")
                 args = parser.parse_args(commands[0].split())
                 command_queue = commands[1:]
