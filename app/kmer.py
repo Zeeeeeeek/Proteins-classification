@@ -88,14 +88,15 @@ def multithread_kmer_count_df(df_path, k: int, output_path, n_threads: int = 5):
     #    for file in os.listdir(cache_path):
     #        os.remove(os.path.join(cache_path, file))
     length = 0
-    output_df = pd.DataFrame()
+    df_list = []
     for index, chunk in enumerate(chunk_container):
         kdf = kmer_count_chunk(chunk, k, index, cache_path, n_threads)
-        output_df = pd.concat([output_df, kdf], ignore_index=True)
-        logging.info(f"Output_df memory usage: {memory_usage_df(output_df)} MB")
+        df_list.append(kdf)
         logging.info(f"Kdf memory usage: {memory_usage_df(kdf)} MB")
         length = index + 1
-    output_df.to_csv(output_path, index=False)
+    out = pd.concat(df_list, ignore_index=True)
+    logging.info(f"Out memory usage: {memory_usage_df(out)} MB")
+    out.to_csv(output_path, index=False)
     #merge_temp_files(length, output_path, cache_path)
 
 
