@@ -26,8 +26,9 @@ def handle_command(args):
                 print("Invalid command")
         elapsed = time.time() - start
         print(f"Elapsed time: {elapsed:.5f} seconds")
-    except ValueError as e:
+    except (ValueError, FileNotFoundError) as e:
         print(e)
+
 
 def handle_cli_input():
     parser = argparse.ArgumentParser()
