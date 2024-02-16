@@ -61,11 +61,14 @@ def multithread_kmer_count_df(df_path, k: int, output_path, n_threads: int = 5):
     else:
         size = base + 2 ** (14 - k) if (14 - k) > 0 else base
     chunk_container = pd.read_csv(df_path, chunksize=size)
+    output_df = pd.DataFrame()
     for chunk in chunk_container:
-        kmer_count_chunk(chunk, output_path, k, n_threads)
+        d = kmer_count_chunk(chunk, k, n_threads)
+        output_df = pd.concat([output_df, d], ignore_index=True)
+    output_df.to_csv(output_path, index=False, mode="w")
 
 
-def kmer_count_chunk(df, output_path, k, n_threads=5):
+def kmer_count_chunk(df, k, n_threads=5):
     def worker_function(sdf, worker_k, result_list):
         result_list.append(kmer_count_dataframe(worker_k, sdf))
 
@@ -80,5 +83,5 @@ def kmer_count_chunk(df, output_path, k, n_threads=5):
         t.start()
     for t in chunk_threads:
         t.join()
-    merged_df = pd.concat(merged_dfs, ignore_index=True)
-    merged_df.to_json(output_path, index=False, mode="a", orient="records", lines=True)
+    return pd.concat(merged_dfs, ignore_index=True)
+    #merged_df.to_json(output_path, index=False, mode="a", orient="records", lines=True)
