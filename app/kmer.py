@@ -2,6 +2,7 @@ import threading
 
 import numpy as np
 import pandas as pd
+import os
 
 from data_preprocessing import split_df_into_n
 import logging
@@ -61,13 +62,17 @@ def multithread_kmer_count_df(df_path, k: int, output_path, n_threads: int = 5):
         size = base + 2 ** (10 - k)
     else:
         size = base + 2 ** (14 - k) if (14 - k) > 0 else base
-    conn = sqlite3.connect('./temp_db.sqlite')
+    conn = sqlite3.connect('temp_db.sqlite')
     chunk_container = pd.read_csv(df_path, chunksize=size)
+    length = 0
     for index, chunk in enumerate(chunk_container):
-        kmer_count_chunk(chunk, index, conn, k, n_threads)
+        kmer_count_chunk(chunk, k, index, conn, n_threads)
+        length = index + 1
     df = pd.read_sql_query("SELECT * FROM " + " UNION ALL SELECT * FROM " \
-                           .join([f"table_{i}" for i in range(len(chunk_container))]), conn)
+                           .join([f"kmer_{i}" for i in range(length)]), conn)
     df.to_csv(output_path, index=False)
+    conn.close()
+    os.remove('temp_db.sqlite')
 
 
 def kmer_count_chunk(df, k, index, conn, n_threads=5):
