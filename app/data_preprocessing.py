@@ -183,10 +183,10 @@ def lambda_sequence(row):
 
 def remove_rows_with_errors(df):
     """
-    Rimuove le righe con errori dimostrati nel notebook, funzione temporanea in vista di correzioni
+    Remove rows with start > end, and rows with region_id not matching min of starts and max of ends.
     """
     output_df = df.copy()
-    # Rimuove le righe con start > end
+    # Remove rows with start > end
     output_df = output_df[~output_df['region_id'].isin(df[df['start'] > df['end']]['region_id'].tolist())]
     to_remove = set()
     agg = output_df.groupby('region_id').agg({
