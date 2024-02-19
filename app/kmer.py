@@ -2,18 +2,8 @@ import threading
 import numpy as np
 import pandas as pd
 
-from memory_profiler import profile
-
 from data_preprocessing import split_df_into_n
-import logging
 
-logging.basicConfig(filename='kmer.log', level=logging.INFO, format='%(asctime)s - %(message)s',
-                    datefmt='%d-%b-%y %H:%M:%S', filemode='w')
-
-
-def memory_usage_df(df):
-    mem = df.memory_usage(deep=True).sum() / (1024 ** 2)
-    return str(mem)
 
 def kmer_count(k, sequence):
     """
@@ -34,19 +24,7 @@ def kmer_count(k, sequence):
     return kmer_dict
 
 
-def expand_row(row, k):
-    seq_dict = kmer_count(k, row['sequence'])
-    for kmer, count in seq_dict.items():
-        row[kmer] = count
-    return row
-
-
-@profile
 def kmer_count_dataframe(k, df):
-    return df[["region_id", "class_topology_fold_clan", "sequence"]].apply(expand_row, axis=1, args=(k,))
-
-
-def kmer_count_dataframe_old(k, df):
     """
     Count the number of k-mers in a dataframe.
     :param k: int
@@ -65,7 +43,6 @@ def kmer_count_dataframe_old(k, df):
     kmer_col_type = np.uint16 if k < 6 else np.uint8
     for kmer_col in kmer_set:
         copy_df[kmer_col] = copy_df[kmer_col].astype(pd.SparseDtype(kmer_col_type, np.nan))
-    logging.info(f"Kmer count df size (MB): {memory_usage_df(copy_df)}")
     return copy_df
 
 
@@ -84,12 +61,10 @@ def multithread_kmer_count_df(df_path, k: int, output_path, n_threads: int = 5):
     for chunk in chunk_container:
         kdf = kmer_count_chunk(chunk, k, n_threads)
         df_list.append(kdf)
-        logging.info(f"Kdf memory usage: {memory_usage_df(kdf)} MB")
     out = pd.concat(df_list, ignore_index=True)
-    logging.info(f"Out memory usage: {memory_usage_df(out)} MB")
     out.to_csv(output_path, index=False)
 
-#@profile
+
 def kmer_count_chunk(df, k, n_threads=5):
 
     def worker_function(sdf, worker_k, result_list):
@@ -98,9 +73,7 @@ def kmer_count_chunk(df, k, n_threads=5):
     splits = split_df_into_n(df, n_threads)
     chunk_threads = []
     merged_dfs = []
-    logging.info(f"Subdf shape: {df.shape}")
     for split in splits:
-        logging.info(f"Chunk shape: {split.shape}")
         t = threading.Thread(target=worker_function, args=(split, k, merged_dfs))
         chunk_threads.append(t)
         t.start()
