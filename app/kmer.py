@@ -8,7 +8,7 @@ from data_preprocessing import split_df_into_n
 def kmer_count(k, sequence):
     """
     Count the number of k-mers in a sequence.
-    :param k: int
+    :param k: Int
     :param sequence: str
     :return: dict
     """
@@ -27,7 +27,7 @@ def kmer_count(k, sequence):
 def kmer_count_dataframe(k, df):
     """
     Count the number of k-mers in a dataframe.
-    :param k: int
+    :param k: Int
     :param df: pd.DataFrame
     :return: pd.DataFrame
     """
@@ -40,43 +40,24 @@ def kmer_count_dataframe(k, df):
         for kmer, count in kmer_dict.items():
             kmer_set.add(kmer)
             copy_df.at[index, kmer] = count
-    kmer_col_type = np.uint16 if k < 6 else np.uint8
     for kmer_col in kmer_set:
-        copy_df[kmer_col] = copy_df[kmer_col].astype(pd.SparseDtype(kmer_col_type, np.nan))
+        copy_df[kmer_col] = copy_df[kmer_col].astype(pd.SparseDtype(np.uint16, np.nan))
     return copy_df
 
 
 def multithread_kmer_count_df(df_path, k: int, output_path, n_threads: int = 5):
-    if k <= 0:
-        raise ValueError("k must be a positive integer")
-    base = 100
-    if k <= 5:
-        size = 1000
-    elif 5 < k < 9:
-        size = base + 2 ** (10 - k)
-    else:
-        size = base
-    chunk_container = pd.read_csv(df_path, chunksize=size)
-    df_list = []
-    for chunk in chunk_container:
-        kdf = kmer_count_chunk(chunk, k, n_threads)
-        df_list.append(kdf)
-    out = pd.concat(df_list, ignore_index=True)
-    out.to_csv(output_path, index=False)
-
-
-def kmer_count_chunk(df, k, n_threads=5):
+    df = pd.read_csv(df_path, usecols=["region_id", "class_topology_fold_clan", "sequence"])
 
     def worker_function(sdf, worker_k, result_list):
         result_list.append(kmer_count_dataframe(worker_k, sdf))
 
     splits = split_df_into_n(df, n_threads)
-    chunk_threads = []
-    merged_dfs = []
+    threads = []
+    dfs = []
     for split in splits:
-        t = threading.Thread(target=worker_function, args=(split, k, merged_dfs))
-        chunk_threads.append(t)
+        t = threading.Thread(target=worker_function, args=(split, k, dfs))
+        threads.append(t)
         t.start()
-    for t in chunk_threads:
+    for t in threads:
         t.join()
-    return pd.concat(merged_dfs, ignore_index=True)
+    pd.concat(dfs, ignore_index=True).to_csv(output_path, index=False)
