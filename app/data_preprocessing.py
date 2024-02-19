@@ -33,8 +33,8 @@ def integrate_regions(df):
         r = region_id[0].split("_")
         row = {
             "region_id": region_id[0],
-            "start": r[1],
-            "end": r[2],
+            "start": min(group["start"].tolist()),
+            "end": max(group["end"].tolist()),
             "type": group["type"].tolist()
         }
         for col in difference_columns:
@@ -188,17 +188,18 @@ def remove_rows_with_errors(df):
     output_df = df.copy()
     # Remove rows with start > end
     output_df = output_df[~output_df['region_id'].isin(df[df['start'] > df['end']]['region_id'].tolist())]
-    to_remove = set()
-    agg = output_df.groupby('region_id').agg({
-        'start': 'min',
-        'end': 'max',
-        'region_id': 'first'
-    })
-    for _, row in agg.iterrows():
-        split = row['region_id'].split('_')
-        if int(split[1]) != row['start'] or int(split[2]) != row['end']:
-            to_remove.add(row['region_id'])
-    return output_df[~output_df['region_id'].isin(to_remove)]
+    return output_df
+    #to_remove = set()
+    ##agg = output_df.groupby('region_id').agg({
+    ##    'start': 'min',
+    ##    'end': 'max',
+    ##    'region_id': 'first'
+    ##})
+    ##for _, row in agg.iterrows():
+    ##    split = row['region_id'].split('_')
+    ##    if int(split[1]) != row['start'] or int(split[2]) != row['end']:
+    ##        to_remove.add(row['region_id'])
+    #return output_df[~output_df['region_id'].isin(to_remove)]
 
 
 def split_df_into_n(df, n):
