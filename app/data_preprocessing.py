@@ -6,8 +6,6 @@ import threading
 import warnings
 import collections
 
-warnings.filterwarnings("ignore")
-
 columns_to_ignore = (["reviewed", "annotator", "origin"])
 
 
@@ -33,8 +31,8 @@ def integrate_regions(df):
         r = region_id[0].split("_")
         row = {
             "region_id": region_id[0],
-            "start": min(group["start"].tolist()),
-            "end": max(group["end"].tolist()),
+            "start": r[1],
+            "end": r[2],
             "type": group["type"].tolist()
         }
         for col in difference_columns:
@@ -147,6 +145,7 @@ def custom_key(key):
 
     return parts
 
+
 def get_missing_residues(structure, chain_id, start, end):
     missing_residues = {}
     for res in structure.header["missing_residues"]:
@@ -188,18 +187,17 @@ def remove_rows_with_errors(df):
     output_df = df.copy()
     # Remove rows with start > end
     output_df = output_df[~output_df['region_id'].isin(df[df['start'] > df['end']]['region_id'].tolist())]
-    return output_df
-    #to_remove = set()
-    ##agg = output_df.groupby('region_id').agg({
-    ##    'start': 'min',
-    ##    'end': 'max',
-    ##    'region_id': 'first'
-    ##})
-    ##for _, row in agg.iterrows():
-    ##    split = row['region_id'].split('_')
-    ##    if int(split[1]) != row['start'] or int(split[2]) != row['end']:
-    ##        to_remove.add(row['region_id'])
-    #return output_df[~output_df['region_id'].isin(to_remove)]
+    to_remove = set()
+    agg = output_df.groupby('region_id').agg({
+        'start': 'min',
+        'end': 'max',
+        'region_id': 'first'
+    })
+    for _, row in agg.iterrows():
+        split = row['region_id'].split('_')
+        if int(split[1]) != row['start'] or int(split[2]) != row['end']:
+            to_remove.add(row['region_id'])
+    return output_df[~output_df['region_id'].isin(to_remove)]
 
 
 def split_df_into_n(df, n):
@@ -228,10 +226,12 @@ def preprocess_from_json(json, regions, n_threads=5):
     df = integrate_regions(df) if regions else differentiate_units_ids(df)
     threads = []
     dfs = split_df_into_n(df, n_threads)
+    warnings.filterwarnings("ignore")
     for d in dfs:
         t = threading.Thread(target=thread_worker, args=(d,))
         threads.append(t)
         t.start()
     for t in threads:
         t.join()
+    warnings.filterwarnings("default")
     return pd.concat(dfs)
