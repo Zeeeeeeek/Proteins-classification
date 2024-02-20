@@ -1,8 +1,7 @@
+import os
 import threading
 import numpy as np
 import pandas as pd
-
-from data_preprocessing import split_df_into_n
 
 
 def kmer_count(k, sequence):
@@ -46,12 +45,21 @@ def kmer_count_dataframe(k, df):
 
 
 def multithread_kmer_count_df(df_path, k: int, output_path, n_threads: int = 5):
+    if os.path.exists(output_path):
+        raise FileExistsError(f"Error: {output_path} already exists.")
+    if k < 1:
+        raise ValueError("Error: k must be greater than 0.")
+    if n_threads < 1:
+        raise ValueError("Error: n_threads must be greater than 0.")
+    if n_threads == 1:
+        kmer_count_dataframe(k, pd.read_csv(df_path)).to_csv(output_path, index=False)
+        return
     df = pd.read_csv(df_path, usecols=["region_id", "class_topology_fold_clan", "sequence"])
 
     def worker_function(sdf, worker_k, result_list):
         result_list.append(kmer_count_dataframe(worker_k, sdf))
 
-    splits = split_df_into_n(df, n_threads)
+    splits = [df[i::n_threads] for i in range(n_threads)]
     threads = []
     dfs = []
     for split in splits:
