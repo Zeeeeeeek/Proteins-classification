@@ -71,14 +71,16 @@ def classify(df, level):
                                                                     multi_class='ovr')
     return results
 
+
 def print_results(results):
     for classifier, met in results.items():
-        print("="*30)
+        print("=" * 30)
         print(classifier)
         print("\nMetrics:")
         for metric, value in met.items():
-            print(f"{metric}: {value}")
+            print(f"\t{metric}: {value:.4f}")
         print()
+
 
 def main():
     df = pd.read_csv("../csv/regioni_1_mer.csv")
