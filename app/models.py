@@ -1,3 +1,5 @@
+import sys
+
 import pandas as pd
 from sklearn import metrics
 from sklearn.ensemble import RandomForestClassifier
@@ -5,14 +7,12 @@ from sklearn.model_selection import train_test_split
 from sklearn.naive_bayes import GaussianNB
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.neural_network import MLPClassifier
-from sklearn.preprocessing import LabelBinarizer, StandardScaler
+from sklearn.preprocessing import LabelBinarizer
 from sklearn.svm import SVC
 from sklearn.tree import DecisionTreeClassifier
 
 """
-Usage: 
-
-
+Usage: python models.py <path_to_csv> <level>
 """
 RANDOM_STATE = 42
 
@@ -28,11 +28,11 @@ def get_y_from_df_and_level(df, level: str):
         case "clan":
             return df.apply(lambda row: row["class_topology_fold_clan"].split(".")[3], axis=1)
         case "class_topology":
-            return df.apply(lambda row: row["class_topology_fold_clan"].split(".")[0:2], axis=1)
+            return df.apply(lambda row: ".".join(row["class_topology_fold_clan"].split(".")[0:2]), axis=1)
         case "class_topology_fold":
-            return df.apply(lambda row: row["class_topology_fold_clan"].split(".")[0:3], axis=1)
+            return df.apply(lambda row: ".".join(row["class_topology_fold_clan"].split(".")[0:3]), axis=1)
         case "class_topology_fold_clan":
-            return df.apply(lambda row: row["class_topology_fold_clan"].split("."), axis=1)
+            return df["class_topology_fold_clan"]
         case _:
             raise ValueError(f"Error: {level} is not a valid level. Please use one of the following: "
                              f"class, topology, fold, clan, class_topology, class_topology_fold, "
@@ -91,8 +91,10 @@ def print_results(results):
 
 
 def main():
-    df = pd.read_csv("../csv/regioni_1_mer.csv")
-    y = get_y_from_df_and_level(df, "class")
+    if len(sys.argv) != 3:
+        raise ValueError("Usage: python models.py <path_to_csv> <level>")
+    df = pd.read_csv(sys.argv[1])
+    y = get_y_from_df_and_level(df, sys.argv[2])
     X = df.drop(columns=["class_topology_fold_clan", "sequence", "region_id"]).fillna(0)
     results = get_classifiers_results(X, y)
     print_results(results)
