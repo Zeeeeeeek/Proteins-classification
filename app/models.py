@@ -5,7 +5,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.naive_bayes import GaussianNB
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.neural_network import MLPClassifier
-from sklearn.preprocessing import LabelBinarizer
+from sklearn.preprocessing import LabelBinarizer, StandardScaler
 from sklearn.svm import SVC
 from sklearn.tree import DecisionTreeClassifier
 
@@ -17,43 +17,51 @@ Usage:
 RANDOM_STATE = 42
 
 
-def get_lambda_from_level(level: str):
+def get_y_from_df_and_level(df, level: str):
     match level:
         case "class":
-            return lambda row: row["class_topology_fold_clan"].split(".")[0]
+            return df.apply(lambda row: row["class_topology_fold_clan"].split(".")[0], axis=1)
         case "topology":
-            return lambda row: row["class_topology_fold_clan"].split(".")[1]
+            return df.apply(lambda row: row["class_topology_fold_clan"].split(".")[1], axis=1)
         case "fold":
-            return lambda row: row["class_topology_fold_clan"].split(".")[2]
+            return df.apply(lambda row: row["class_topology_fold_clan"].split(".")[2], axis=1)
         case "clan":
-            return lambda row: row["class_topology_fold_clan"].split(".")[3]
+            return df.apply(lambda row: row["class_topology_fold_clan"].split(".")[3], axis=1)
         case "class_topology":
-            return lambda row: row["class_topology_fold_clan"].split(".")[0:2]
+            return df.apply(lambda row: row["class_topology_fold_clan"].split(".")[0:2], axis=1)
         case "class_topology_fold":
-            return lambda row: row["class_topology_fold_clan"].split(".")[0:3]
+            return df.apply(lambda row: row["class_topology_fold_clan"].split(".")[0:3], axis=1)
         case "class_topology_fold_clan":
-            return lambda row: row["class_topology_fold_clan"]
+            return df.apply(lambda row: row["class_topology_fold_clan"].split("."), axis=1)
         case _:
             raise ValueError(f"Error: {level} is not a valid level. Please use one of the following: "
                              f"class, topology, fold, clan, class_topology, class_topology_fold, "
                              f"class_topology_fold_clan.")
 
 
-def classify(df, level):
-    y = df.apply(get_lambda_from_level(level), axis=1)
-    X = df.drop(columns=["class_topology_fold_clan", "sequence", "region_id"]).fillna(0)
+def get_classifiers_results(X, y):
+    names = [
+        "K Nearest Neighbors",
+        "SVM",
+        "Decision Tree",
+        "Random Forest",
+        "Random Forest Log Loss",
+        "Neural Net",
+        "Naive Bayes"
+    ]
     classifiers = [
         KNeighborsClassifier(),
         SVC(random_state=RANDOM_STATE),
         DecisionTreeClassifier(random_state=RANDOM_STATE),
         RandomForestClassifier(random_state=RANDOM_STATE),
+        RandomForestClassifier(random_state=RANDOM_STATE, criterion='log_loss'),
         MLPClassifier(random_state=RANDOM_STATE, max_iter=1000),
         GaussianNB()
     ]
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=RANDOM_STATE)
     results = {}
-    for classifier in classifiers:
-        classifier_name = classifier.__class__.__name__
+    for index, classifier in enumerate(classifiers):
+        classifier_name = names[index]
         classifier.fit(X_train, y_train)
         y_pred = classifier.predict(X_test)
         results[classifier_name] = {}
@@ -84,7 +92,10 @@ def print_results(results):
 
 def main():
     df = pd.read_csv("../csv/regioni_1_mer.csv")
-    print_results(classify(df, "class_topology_fold_clan"))
+    y = get_y_from_df_and_level(df, "class")
+    X = df.drop(columns=["class_topology_fold_clan", "sequence", "region_id"]).fillna(0)
+    results = get_classifiers_results(X, y)
+    print_results(results)
 
 
 if __name__ == "__main__":
