@@ -3,7 +3,7 @@ import sys
 import pandas as pd
 from sklearn import metrics
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import train_test_split, KFold, cross_val_score
 from sklearn.naive_bayes import GaussianNB
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.neural_network import MLPClassifier
@@ -39,7 +39,7 @@ def get_y_from_df_and_level(df, level: str):
                              f"class_topology_fold_clan.")
 
 
-def get_classifiers_results(X, y):
+def get_classifiers():
     names = [
         "K Nearest Neighbors",
         "SVM",
@@ -58,6 +58,11 @@ def get_classifiers_results(X, y):
         MLPClassifier(random_state=RANDOM_STATE, max_iter=1000),
         GaussianNB()
     ]
+    return names, classifiers
+
+
+def get_classifiers_results(X, y):
+    names, classifiers = get_classifiers()
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=RANDOM_STATE)
     results = {}
     for index, classifier in enumerate(classifiers):
@@ -90,6 +95,18 @@ def print_results(results):
         print()
 
 
+def print_k_fold_results(X, y):
+    cv = KFold(n_splits=10, random_state=RANDOM_STATE, shuffle=True)
+    names, classifiers = get_classifiers()
+    print("K-Fold Cross Validation Results:")
+    for index, classifier in enumerate(classifiers):
+        print("=" * 30)
+        print(names[index])
+        scores = cross_val_score(classifier, X, y, cv=cv, scoring='accuracy')
+        print(f"Accuracy: {scores.mean():.4f}")
+        print()
+
+
 def main():
     if len(sys.argv) != 3:
         raise ValueError("Usage: python models.py <path_to_csv> <level>")
@@ -98,6 +115,7 @@ def main():
     X = df.drop(columns=["class_topology_fold_clan", "sequence", "region_id"]).fillna(0)
     results = get_classifiers_results(X, y)
     print_results(results)
+    print_k_fold_results(X, y)
 
 
 if __name__ == "__main__":
