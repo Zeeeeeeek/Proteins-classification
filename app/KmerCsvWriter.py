@@ -10,6 +10,8 @@ class KmerCsvWriter:
         self.last_index = 0
         if os.path.exists("./rows.tmp"):
             os.remove("./rows.tmp")
+        if os.path.exists("./columns.tmp"):
+            os.remove("./columns.tmp")
 
     def write_kmer_count(self, kmers: Dict[str, int], region_id: str, class_topology_fold_clan: str, sequence: str):
         # If all the given kmers are not in the kmer_column_indexes, update the first row of the file

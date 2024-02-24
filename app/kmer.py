@@ -2,7 +2,13 @@ import os
 import threading
 import numpy as np
 import pandas as pd
+from memory_profiler import profile
 
+from app.KmerCsvWriter import KmerCsvWriter
+from pympler import asizeof
+import logging
+
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s %(message)s', filemode='w', filename='memory.log')
 
 def kmer_count(k, sequence):
     """
@@ -44,7 +50,7 @@ def kmer_count_dataframe(k, df):
     return copy_df
 
 
-def multithread_kmer_count_df(df_path, k: int, output_path, n_threads: int = 5):
+def multithread_kmer_count_df(df_path: object, k: int, output_path: object, n_threads: int = 5) -> object:
     if os.path.exists(output_path):
         raise FileExistsError(f"Error: {output_path} already exists.")
     if k < 1:
@@ -69,3 +75,17 @@ def multithread_kmer_count_df(df_path, k: int, output_path, n_threads: int = 5):
     for t in threads:
         t.join()
     pd.concat(dfs, ignore_index=True).to_csv(output_path, index=False)
+
+def new_kmer_count(df_path, k: int, output_path):
+    df = pd.read_csv(df_path, usecols=["region_id", "class_topology_fold_clan", "sequence"])
+    writer = KmerCsvWriter(output_path)
+    for index, row in df.iterrows():
+        if row['sequence'] is None or row['sequence'] == "":
+            continue
+        to_profile(writer, k, row['sequence'], row['region_id'], row['class_topology_fold_clan'])
+        logging.debug(f"Memory usage: {asizeof.asizeof(writer) / (1024 * 1024)} MB")
+    writer.close()
+
+@profile
+def to_profile(writer, k, sequence, region_id, class_topology_fold_clan):
+    writer.write_kmer_count(kmer_count(k, sequence), region_id, class_topology_fold_clan, sequence)
