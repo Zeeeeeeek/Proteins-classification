@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 from memory_profiler import profile
 
-from app.KmerCsvWriter import KmerCsvWriter
+from KmerCsvWriter import KmerCsvWriter
 from pympler import asizeof
 import logging
 
