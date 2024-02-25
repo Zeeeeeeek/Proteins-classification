@@ -14,8 +14,6 @@ class KmerCsvWriter:
             os.remove("./columns.tmp")
 
     def write_kmer_count(self, kmers: Dict[str, int], region_id: str, class_topology_fold_clan: str, sequence: str):
-        # If all the given kmers are not in the kmer_column_indexes, update the first row of the file
-        # and add the new kmers to the kmer_column_indexes
         if not all(kmer in self.kmer_column_indexes for kmer in kmers):
             self.write_columns_row(kmers.keys())
         with open("rows.tmp", "a") as file:
@@ -49,19 +47,16 @@ class KmerCsvWriter:
         with open("columns.tmp", "r") as columns_file:
             columns = columns_file.read()
         with open("rows.tmp", "r") as rows_file:
-            rows = rows_file.read()
-        with open(self.output_path, "w") as file:
-            file.write(columns)
-            file.write("\n")
-            for row in rows.split("\n"):
-                if row.strip() != "":
-                    file.write(row)
-                    # Cont the number of columns in the row using the separator character
-                    if row.count(self.separator) != columns.count(self.separator):
-                        # Add the missing columns
-                        for _ in range(columns.count(self.separator) - row.count(self.separator)):
-                            file.write(f"{self.separator}")
-                    file.write("\n")
+            with open(self.output_path, "w") as file:
+                file.write(columns)
+                file.write("\n")
+                for row in rows_file:
+                    stripped_row = row.strip()
+                    if stripped_row != "":
+                        file.write(stripped_row)
+                        if stripped_row.count(self.separator) != columns.count(self.separator):
+                            for _ in range(columns.count(self.separator) - stripped_row.count(self.separator)):
+                                file.write(f"{self.separator}")
+                        file.write("\n")
         os.remove("columns.tmp")
         os.remove("rows.tmp")
-
