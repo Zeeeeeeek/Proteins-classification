@@ -53,7 +53,15 @@ class KmerCsvWriter:
         with open(self.output_path, "w") as file:
             file.write(columns)
             file.write("\n")
-            file.write(rows)
+            for row in rows.split("\n"):
+                if row.strip() != "":
+                    file.write(row)
+                    # Cont the number of columns in the row using the separator character
+                    if row.count(self.separator) != columns.count(self.separator):
+                        # Add the missing columns
+                        for _ in range(columns.count(self.separator) - row.count(self.separator)):
+                            file.write(f"{self.separator}")
+                    file.write("\n")
         os.remove("columns.tmp")
         os.remove("rows.tmp")
 
