@@ -13,12 +13,13 @@ def kmer_count(k, sequence):
     kmer_dict = {}
     if type(sequence) != str:
         return kmer_dict
-    for i in range(len(sequence) - k + 1):
-        kmer = sequence[i:i + k]
-        if kmer in kmer_dict:
-            kmer_dict[kmer] += 1
-        else:
-            kmer_dict[kmer] = 1
+    for i in range(1, k + 1):
+        for j in range(len(sequence) - i + 1):
+            kmer = sequence[j:j + i]
+            if kmer in kmer_dict:
+                kmer_dict[kmer] += 1
+            else:
+                kmer_dict[kmer] = 1
     return kmer_dict
 
 
