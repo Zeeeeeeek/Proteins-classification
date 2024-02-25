@@ -1,5 +1,6 @@
 import sys
 
+import numpy as np
 import pandas as pd
 from sklearn import metrics
 from sklearn.cluster import AgglomerativeClustering
@@ -13,7 +14,7 @@ from sklearn.svm import SVC
 from sklearn.tree import DecisionTreeClassifier
 
 """
-Usage: python models.py <path_to_csv> <level> <method>
+Usage: python models.py <path_to_csv> <level> <method> <max_sample_size_per_level>
 """
 RANDOM_STATE = 42
 
@@ -47,7 +48,7 @@ def get_classifiers():
         "Decision Tree",
         "Random Forest",
         "Random Forest Log Loss",
-        "Neural Net",
+        #"Neural Net",
         "Naive Bayes"
     ]
     classifiers = [
@@ -56,7 +57,7 @@ def get_classifiers():
         DecisionTreeClassifier(random_state=RANDOM_STATE),
         RandomForestClassifier(random_state=RANDOM_STATE),
         RandomForestClassifier(random_state=RANDOM_STATE, criterion='log_loss'),
-        MLPClassifier(random_state=RANDOM_STATE, max_iter=1000),
+        #MLPClassifier(random_state=RANDOM_STATE, max_iter=1000),
         GaussianNB()
     ]
     return names, classifiers
@@ -127,18 +128,62 @@ def cluster(X, label_dict):
     labels_pred = model.fit_predict(X)
     print_cluster_metrics(label_dict, labels_pred, "average")
 
+def get_sampled_regions(df_path, level: str, sample_size: int):
+    df = pd.read_csv(df_path, usecols=["region_id", "class_topology_fold_clan"],
+                     dtype={"region_id": str, "class_topology_fold_clan": str})
+    df['label'] = get_y_from_df_and_level(df, level)
+    counter = df['label'].value_counts().to_dict()
+    for key, count in counter.items():
+        if count > sample_size:
+            counter[key] = sample_size
+    return df.groupby('label').apply(lambda x: x.sample(n=counter[x.name]), include_groups=False)['region_id'].tolist()
+
+def read_csv_of_regions(df_path, regions):
+    index = 0
+    rows = []
+    reg_copy = regions.copy()
+    with open(df_path, "r") as file:
+        for line in file:
+            if index == 0:
+                columns = line.strip().split(",")
+                index += 1
+            if line.strip().split(",")[0] in reg_copy:
+                split = line.strip().split(",")
+                row = []
+                column_index = 0
+                for s in split:
+                    if s == '':
+                        row.append(0)
+                        continue
+                    if column_index > 2:
+                        row.append(int(s))
+                    else:
+                        row.append(s)
+                        column_index += 1
+                rows.append(row)
+                reg_copy.remove(line.strip().split(",")[0])
+            if len(reg_copy) == 0:
+                break
+    return pd.DataFrame(rows, columns=columns)
 
 def main():
-    if len(sys.argv) != 4:
-        raise ValueError("Usage: python models.py <path_to_csv> <level> <method>")
+    if len(sys.argv) != 5:
+        raise ValueError("Usage: python models.py <path_to_csv> <level> <method> <max_sample_size_per_level>")
     if sys.argv[3] not in ['cluster', 'classifiers']:
         raise ValueError("Error: method must be either 'cluster' or 'classifiers'.")
-    df = pd.read_csv(sys.argv[1])
+    print("Reading CSV...")
+    print("\tSampling regions...")
+    sampled_regions = get_sampled_regions(sys.argv[1], sys.argv[2], int(sys.argv[4]))
+    print("\tReading data...")
+    df = read_csv_of_regions(sys.argv[1], sampled_regions)
     y = get_y_from_df_and_level(df, sys.argv[2])
-    X = df.drop(columns=["class_topology_fold_clan", "sequence", "region_id"]).fillna(0)
+    X = df.drop(columns=["class_topology_fold_clan", "sequence", "region_id"])
+    print("Data read.")
     if sys.argv[3] == 'cluster':
+        print("Clustering...")
         cluster(X, y)
     else:
+        print("Running classifiers...")
         results = get_classifiers_results(X, y)
         print_results(results)
         print_k_fold_results(X, y)
