@@ -2,7 +2,7 @@ import re
 
 from api import repeatsdb_get
 from data_preprocessing import preprocess_from_json
-from kmer import multithread_kmer_count_df, new_kmer_count
+from kmer import single_thread_kmer_count, kmer_count_multithread
 
 COLON_PATTERN = re.compile(r'^(?:[^:]+:)+[^:]+$')
 
