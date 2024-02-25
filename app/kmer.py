@@ -10,6 +10,7 @@ import logging
 
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s %(message)s', filemode='w', filename='memory.log')
 
+
 def kmer_count(k, sequence):
     """
     Count the number of k-mers in a sequence.
@@ -76,16 +77,38 @@ def multithread_kmer_count_df(df_path: object, k: int, output_path: object, n_th
         t.join()
     pd.concat(dfs, ignore_index=True).to_csv(output_path, index=False)
 
-def new_kmer_count(df_path, k: int, output_path):
+
+def single_thread_kmer_count(df_path, k: int, output_path):
     df = pd.read_csv(df_path, usecols=["region_id", "class_topology_fold_clan", "sequence"])
     writer = KmerCsvWriter(output_path)
     for index, row in df.iterrows():
         if row['sequence'] is None or row['sequence'] == "":
             continue
-        to_profile(writer, k, row['sequence'], row['region_id'], row['class_topology_fold_clan'])
-        logging.debug(f"Memory usage: {asizeof.asizeof(writer) / (1024 * 1024)} MB")
+        writer.write_kmer_count(kmer_count(k, row['sequence']), row['region_id'], row['class_topology_fold_clan'],
+                                row['sequence'])
     writer.close()
+    print("Saved to", output_path)
 
-@profile
-def to_profile(writer, k, sequence, region_id, class_topology_fold_clan):
-    writer.write_kmer_count(kmer_count(k, sequence), region_id, class_topology_fold_clan, sequence)
+
+def kmer_count_multithread(df_path, k, output_path, n_threads):
+    chunks = pd.read_csv(df_path, usecols=["region_id", "class_topology_fold_clan", "sequence"], chunksize=n_threads)
+    writer = KmerCsvWriter(output_path)
+
+    def worker_function(worker_row, worker_k, result_list):
+        result_list.append(
+            (kmer_count(worker_k, worker_row['sequence']), row['region_id'], row['class_topology_fold_clan'],
+             row['sequence'])
+        )
+
+    for chunk in chunks:
+        list_of_kmer_counts = []
+        threads = []
+        for _, row in chunk.iterrows():
+            t = threading.Thread(target=worker_function, args=(row, k, list_of_kmer_counts))
+            threads.append(t)
+            t.start()
+        for t in threads:
+            t.join()
+        for tup in list_of_kmer_counts:
+            writer.write_kmer_count(tup[0], tup[1], tup[2], tup[3])
+    writer.close()
