@@ -46,16 +46,19 @@ class KmerCsvWriter:
     def close(self):
         with open("columns.tmp", "r") as columns_file:
             columns = columns_file.read()
-        with open("rows.tmp", "r") as rows_file:
             with open(self.output_path, "w") as file:
                 file.write(columns)
                 file.write("\n")
-                for row in rows_file:
+            columns_separator_count = columns.count(self.separator)
+            del columns
+        with open("rows.tmp", "r") as rows_file:
+            for row in rows_file:
+                with open(self.output_path, "a") as file:
                     stripped_row = row.strip()
                     if stripped_row != "":
                         file.write(stripped_row)
-                        if stripped_row.count(self.separator) != columns.count(self.separator):
-                            for _ in range(columns.count(self.separator) - stripped_row.count(self.separator)):
+                        if stripped_row.count(self.separator) != columns_separator_count:
+                            for _ in range(columns_separator_count - stripped_row.count(self.separator)):
                                 file.write(f"{self.separator}")
                         file.write("\n")
         os.remove("columns.tmp")
