@@ -23,6 +23,10 @@ def run_query(query_string, file_name, merge_regions, n_threads):
 
 def run_kmer_count(input_file, k, output_file, n_threads=5):
     input_name = input_file if input_file.endswith(".csv") else input_file + ".csv"
-    output_name = output_file + ".csv" if output_file is not None else input_file + "_" + str(k) + "_mer.csv"
-    #multithread_kmer_count_df(input_name, k, output_name, n_threads)
-    new_kmer_count(input_name, k, output_name)
+    output_name = output_file if output_file is not None else input_file + "_" + str(k) + "_mer.csv"
+    if not output_name.endswith(".csv"):
+        output_name += ".csv"
+    if n_threads == 1:
+        single_thread_kmer_count(input_name, k, output_name)
+    else:
+        kmer_count_multithread(input_name, k, output_name, n_threads)
