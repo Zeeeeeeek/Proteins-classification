@@ -1,7 +1,7 @@
 import threading
 import pandas as pd
 
-from KmerCsvWriter import KmerCsvWriter
+from app.KmerCsvWriter import KmerCsvWriter
 
 def kmer_count(k, sequence):
     """
