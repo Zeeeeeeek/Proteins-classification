@@ -1,5 +1,6 @@
 import sys
 
+import numpy as np
 import pandas as pd
 from sklearn import metrics
 from sklearn.cluster import AgglomerativeClustering
@@ -18,26 +19,40 @@ Usage: python models.py <path_to_csv> <level> <method> <max_sample_size_per_leve
 RANDOM_STATE = 42
 
 
-def get_y_from_df_and_level(df, level: str):
+def get_y_and_X(df, level: str):
+    X = df.copy()
+
     match level:
         case "class":
-            return df.apply(lambda row: row["class_topology_fold_clan"].split(".")[0], axis=1)
+            X['label'] = df.apply(lambda row: row["class_topology_fold_clan"].split(".")[0] if len(
+                row["class_topology_fold_clan"].split(".")) > 0 else np.nan, axis=1)
         case "topology":
-            return df.apply(lambda row: row["class_topology_fold_clan"].split(".")[1], axis=1)
+            X['label'] = df.apply(lambda row: row["class_topology_fold_clan"].split(".")[1] if len(
+                row["class_topology_fold_clan"].split(".")) > 1 else np.nan, axis=1)
         case "fold":
-            return df.apply(lambda row: row["class_topology_fold_clan"].split(".")[2], axis=1)
+            X['label'] = df.apply(lambda row: row["class_topology_fold_clan"].split(".")[2] if len(
+                row["class_topology_fold_clan"].split(".")) > 2 else np.nan, axis=1)
         case "clan":
-            return df.apply(lambda row: row["class_topology_fold_clan"].split(".")[3], axis=1)
+            X['label'] = df.apply(lambda row: row["class_topology_fold_clan"].split(".")[3] if len(
+                row["class_topology_fold_clan"].split(".")) > 3 else np.nan, axis=1)
         case "class_topology":
-            return df.apply(lambda row: ".".join(row["class_topology_fold_clan"].split(".")[0:2]), axis=1)
+            X['label'] = df.apply(
+                lambda row: row["class_topology_fold_clan"][:3] if len(
+                    row["class_topology_fold_clan"]) >= 3 else np.nan, axis=1)
         case "class_topology_fold":
-            return df.apply(lambda row: ".".join(row["class_topology_fold_clan"].split(".")[0:3]), axis=1)
+            X['label'] = df.apply(
+                lambda row: row["class_topology_fold_clan"][:5] if len(
+                    row["class_topology_fold_clan"]) >= 5 else np.nan, axis=1)
         case "class_topology_fold_clan":
-            return df["class_topology_fold_clan"]
+            X['label'] = df.apply(lambda row: row["class_topology_fold_clan"] if len(
+                row["class_topology_fold_clan"]) >= 7 else np.nan, axis=1)
         case _:
             raise ValueError(f"Error: {level} is not a valid level. Please use one of the following: "
                              f"class, topology, fold, clan, class_topology, class_topology_fold, "
                              f"class_topology_fold_clan.")
+    X.dropna(subset=["label"], inplace=True)
+    return X['label'].astype(str), X.drop(columns=["class_topology_fold_clan",  # "sequence",
+                                                   "region_id", "label"])
 
 
 def get_classifiers():
@@ -139,7 +154,7 @@ def cluster(X, label_dict):
 def get_sampled_regions(df_path, level: str, sample_size: int):
     df = pd.read_csv(df_path, usecols=["region_id", "class_topology_fold_clan"],
                      dtype={"region_id": str, "class_topology_fold_clan": str})
-    df['label'] = get_y_from_df_and_level(df, level)
+    df['label'] = get_y_and_X(df, level)
     counter = df['label'].value_counts().to_dict()
     for key, count in counter.items():
         if count > sample_size:
@@ -186,8 +201,7 @@ def run_models(df_path, level, method, max_sample_size_per_level):
     sampled_regions = get_sampled_regions(df_path, level, max_sample_size_per_level)
     print("\tReading data...")
     df = read_csv_of_regions(df_path, sampled_regions)
-    y = get_y_from_df_and_level(df, level)
-    X = df.drop(columns=["class_topology_fold_clan", "sequence", "region_id"])
+    y, X = get_y_and_X(df, level)
     print("Data read.")
     if method == 'cluster':
         print("Clustering...")
