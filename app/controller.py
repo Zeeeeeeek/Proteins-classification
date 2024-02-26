@@ -17,8 +17,11 @@ def run_query(query_string, file_name, merge_regions, n_threads):
     check_query_string(q)
     q = q.replace("+", "%2B").replace("|", "%7C")
     q += "%2Breviewed:true&show=entries"
+    output = file_name if file_name else "output.csv"
+    if not output.endswith(".csv"):
+        output += ".csv"
     preprocess_from_json(repeatsdb_get("query=" + q), merge_regions, n_threads) \
-        .to_csv(file_name + ".csv", index=False)
+        .to_csv(file_name, index=False)
 
 
 def run_kmer_count(input_file, k, output_file, n_threads=5):
