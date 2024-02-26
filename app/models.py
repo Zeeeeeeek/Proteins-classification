@@ -51,7 +51,7 @@ def get_y_and_X(df, level: str):
                              f"class, topology, fold, clan, class_topology, class_topology_fold, "
                              f"class_topology_fold_clan.")
     X.dropna(subset=["label"], inplace=True)
-    return X['label'].astype(str), X.drop(columns=["class_topology_fold_clan",  # "sequence",
+    return X['label'].astype(str), X.drop(columns=["class_topology_fold_clan",
                                                    "region_id", "label"])
 
 
@@ -154,7 +154,7 @@ def cluster(X, label_dict):
 def get_sampled_regions(df_path, level: str, sample_size: int):
     df = pd.read_csv(df_path, usecols=["region_id", "class_topology_fold_clan"],
                      dtype={"region_id": str, "class_topology_fold_clan": str})
-    df['label'] = get_y_and_X(df, level)
+    df['label'], _ = get_y_and_X(df, level)
     counter = df['label'].value_counts().to_dict()
     for key, count in counter.items():
         if count > sample_size:
@@ -202,6 +202,8 @@ def run_models(df_path, level, method, max_sample_size_per_level):
     print("\tReading data...")
     df = read_csv_of_regions(df_path, sampled_regions)
     y, X = get_y_and_X(df, level)
+    if 'sequence' in X.columns:
+        X.drop(columns=['sequence'], inplace=True)
     print("Data read.")
     if method == 'cluster':
         print("Clustering...")
