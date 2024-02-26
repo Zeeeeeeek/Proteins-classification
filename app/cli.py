@@ -1,7 +1,7 @@
 import argparse
 import time
 
-from app.controller import run_query, run_kmer_count
+from app.controller import run_query, run_kmer_count, run_models_on_kmers
 
 
 def handle_query(args):
@@ -11,6 +11,13 @@ def handle_query(args):
 def handle_kmer(args):
     run_kmer_count(args.input, args.k, args.file_name, args.n_threads)
 
+
+def handle_models(args):
+    if args.max_sample_size_per_level < 1:
+        raise ValueError("Error: max_sample_size_per_level must be an integer greater than 0.")
+    run_models_on_kmers(args.path, args.level, args.method, args.max_sample_size_per_level)
+
+
 def handle_command(args):
     try:
         start = time.time()
@@ -19,6 +26,8 @@ def handle_command(args):
                 handle_query(args)
             case 'kmer':
                 handle_kmer(args)
+            case 'models':
+                handle_models(args)
             case 'exit':
                 print("Exiting")
                 exit(0)
@@ -50,6 +59,16 @@ def handle_cli_input():
                              type=str)
     parser_kmer.add_argument('-t', '--threads', dest='n_threads', help='Number of threads (default: 5)', type=int,
                              default=5)
+
+    # Models
+    parser_models = subparsers.add_parser('models', help='Run models on kmer dataset')
+    parser_models.add_argument('path', help='Path to the dataset', type=str)
+    parser_models.add_argument('level', help='Level', type=str, choices=['clan', 'fold', 'class', 'topology',
+                                                                         'class_topology', 'class_topology_fold',
+                                                                         'class_topology_fold_clan'
+                                                                         ])
+    parser_models.add_argument('method', help='Method', type=str, choices=['cluster', 'classifiers'])
+    parser_models.add_argument('max_sample_size_per_level', help='Max sample size per level', type=int)
 
     # Exit
     subparsers.add_parser('exit', help='Exit the cli')
