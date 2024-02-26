@@ -1,6 +1,5 @@
 import sys
 
-import numpy as np
 import pandas as pd
 from sklearn import metrics
 from sklearn.cluster import AgglomerativeClustering
@@ -48,7 +47,7 @@ def get_classifiers():
         "Decision Tree",
         "Random Forest",
         "Random Forest Log Loss",
-        #"Neural Net",
+        # "Neural Net",
         "Naive Bayes"
     ]
     classifiers = [
@@ -57,7 +56,7 @@ def get_classifiers():
         DecisionTreeClassifier(random_state=RANDOM_STATE),
         RandomForestClassifier(random_state=RANDOM_STATE),
         RandomForestClassifier(random_state=RANDOM_STATE, criterion='log_loss'),
-        #MLPClassifier(random_state=RANDOM_STATE, max_iter=1000),
+        # MLPClassifier(random_state=RANDOM_STATE, max_iter=1000),
         GaussianNB()
     ]
     return names, classifiers
@@ -78,22 +77,28 @@ def get_classifiers_results(X, y):
         results[classifier_name]["Recall"] = metrics.recall_score(y_test, y_pred, average='weighted',
                                                                   zero_division=1)
         results[classifier_name]["F1 Score"] = metrics.f1_score(y_test, y_pred, average='weighted')
-        lb = LabelBinarizer()
-        lb.fit(y_test)
-        y_test_lb = lb.transform(y_test)
-        y_pred_lb = lb.transform(y_pred)
-        results[classifier_name]["AUC-ROC"] = metrics.roc_auc_score(y_test_lb, y_pred_lb, average='weighted',
-                                                                    multi_class='ovr')
+        try:
+            lb = LabelBinarizer()
+            lb.fit(y_test)
+            y_test_lb = lb.transform(y_test)
+            y_pred_lb = lb.transform(y_pred)
+            results[classifier_name]["AUC-ROC"] = metrics.roc_auc_score(y_test_lb, y_pred_lb, average='weighted',
+                                                                        multi_class='ovr')
+        except ValueError:
+            results[classifier_name]["AUC-ROC"] = None
     return results
 
 
 def print_results(results):
     for classifier, met in results.items():
-        print("=" * 30)
+        print("=" * 30 + "\n")
         print(classifier)
         print("\nMetrics:")
         for metric, value in met.items():
-            print(f"\t{metric}: {value:.4f}")
+            if value is not None:
+                print(f"\t{metric}: {value:.4f}")
+            else:
+                print(f"\t{metric}: N/A")
         print()
 
 
@@ -108,6 +113,7 @@ def print_k_fold_results(X, y):
         print(f"Accuracy: {scores.mean():.4f}")
         print()
 
+
 def print_cluster_metrics(labels_true, labels_pred, method: str):
     print("=" * 30)
     print(f"Method: {method}")
@@ -116,6 +122,7 @@ def print_cluster_metrics(labels_true, labels_pred, method: str):
     print("\tHomogeneity_score", metrics.homogeneity_score(labels_true, labels_pred))
     print("\tCompleteness_score", metrics.completeness_score(labels_true, labels_pred))
     print("\tfowlkes_mallows_score", metrics.fowlkes_mallows_score(labels_true, labels_pred))
+
 
 def cluster(X, label_dict):
     model = AgglomerativeClustering(n_clusters=len(label_dict), linkage='single')
@@ -128,6 +135,7 @@ def cluster(X, label_dict):
     labels_pred = model.fit_predict(X)
     print_cluster_metrics(label_dict, labels_pred, "average")
 
+
 def get_sampled_regions(df_path, level: str, sample_size: int):
     df = pd.read_csv(df_path, usecols=["region_id", "class_topology_fold_clan"],
                      dtype={"region_id": str, "class_topology_fold_clan": str})
@@ -137,6 +145,7 @@ def get_sampled_regions(df_path, level: str, sample_size: int):
         if count > sample_size:
             counter[key] = sample_size
     return df.groupby('label').apply(lambda x: x.sample(n=counter[x.name]), include_groups=False)['region_id'].tolist()
+
 
 def read_csv_of_regions(df_path, regions):
     index = 0
@@ -166,20 +175,21 @@ def read_csv_of_regions(df_path, regions):
                 break
     return pd.DataFrame(rows, columns=columns)
 
-def main():
-    if len(sys.argv) != 5:
-        raise ValueError("Usage: python models.py <path_to_csv> <level> <method> <max_sample_size_per_level>")
-    if sys.argv[3] not in ['cluster', 'classifiers']:
+
+def run_models(df_path, level, method, max_sample_size_per_level):
+    if method not in ['cluster', 'classifiers']:
         raise ValueError("Error: method must be either 'cluster' or 'classifiers'.")
+    if max_sample_size_per_level < 1 or not isinstance(max_sample_size_per_level, int):
+        raise ValueError("Error: max_sample_size_per_level must be an integer greater than 0.")
     print("Reading CSV...")
     print("\tSampling regions...")
-    sampled_regions = get_sampled_regions(sys.argv[1], sys.argv[2], int(sys.argv[4]))
+    sampled_regions = get_sampled_regions(df_path, level, max_sample_size_per_level)
     print("\tReading data...")
-    df = read_csv_of_regions(sys.argv[1], sampled_regions)
-    y = get_y_from_df_and_level(df, sys.argv[2])
+    df = read_csv_of_regions(df_path, sampled_regions)
+    y = get_y_from_df_and_level(df, level)
     X = df.drop(columns=["class_topology_fold_clan", "sequence", "region_id"])
     print("Data read.")
-    if sys.argv[3] == 'cluster':
+    if method == 'cluster':
         print("Clustering...")
         cluster(X, y)
     else:
@@ -187,6 +197,11 @@ def main():
         results = get_classifiers_results(X, y)
         print_results(results)
         print_k_fold_results(X, y)
+    print("Done.")
+
+
+def main():
+    run_models(sys.argv[1], sys.argv[2], sys.argv[3], int(sys.argv[4]))
 
 
 if __name__ == "__main__":

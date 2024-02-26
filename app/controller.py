@@ -3,6 +3,7 @@ import re
 from app.api import repeatsdb_get
 from app.data_preprocessing import preprocess_from_json
 from app.kmer import single_thread_kmer_count, kmer_count_multithread
+from app.models import run_models
 
 COLON_PATTERN = re.compile(r'^(?:[^:]+:)+[^:]+$')
 
@@ -33,3 +34,11 @@ def run_kmer_count(input_file, k, output_file, n_threads=5):
         single_thread_kmer_count(input_name, k, output_name)
     else:
         kmer_count_multithread(input_name, k, output_name, n_threads)
+
+def run_models_on_kmers(path, level, method, max_sample_size_per_level):
+    run_models(
+        path if path.endswith(".csv") else path + ".csv",
+        level,
+        method,
+        max_sample_size_per_level
+    )

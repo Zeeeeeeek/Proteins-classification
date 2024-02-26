@@ -2,6 +2,7 @@ from PyQt6.QtWidgets import QApplication, QMainWindow, QPushButton, QVBoxLayout,
     QHBoxLayout, QSpacerItem
 
 from gui.KmerWidget import KmerCountWidget
+from gui.ModelsWidget import ModelsWidget
 from gui.QueryWidget import QueryWidget
 
 
@@ -10,15 +11,19 @@ class MainWindow(QMainWindow):
         super().__init__()
         self.kmer_widget = KmerCountWidget(self)
         self.query_widget = QueryWidget(self)
+        self.models_widget = ModelsWidget(self)
 
         self.kmer_button = QPushButton("Kmer")
         self.kmer_button.clicked.connect(self.show_kmer_widget)
         self.query_button = QPushButton("Query")
         self.query_button.clicked.connect(self.show_query_widget)
+        self.models_button = QPushButton("Models")
+        self.models_button.clicked.connect(self.show_models_widget)
 
         self.stacked_widget = QStackedWidget()
         self.stacked_widget.addWidget(self.query_widget)
         self.stacked_widget.addWidget(self.kmer_widget)
+        self.stacked_widget.addWidget(self.models_widget)
 
         button_layout = QHBoxLayout()
 
@@ -30,6 +35,10 @@ class MainWindow(QMainWindow):
         button_layout.addSpacing(10)
 
         button_layout.addWidget(self.kmer_button)
+
+        button_layout.addSpacing(10)
+
+        button_layout.addWidget(self.models_button)
 
         right_spacer = QSpacerItem(10, 1)
         button_layout.addItem(right_spacer)
@@ -47,9 +56,15 @@ class MainWindow(QMainWindow):
 
     def show_kmer_widget(self):
         self.stacked_widget.setCurrentIndex(1)
+        self.setFixedSize(400, 350)
 
     def show_query_widget(self):
         self.stacked_widget.setCurrentIndex(0)
+        self.setFixedSize(400, 350)
+
+    def show_models_widget(self):
+        self.stacked_widget.setCurrentIndex(2)
+        self.setFixedSize(400, 450)
 
 
 def run():
