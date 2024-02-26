@@ -1,6 +1,8 @@
+import os
+
 from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import QLabel, QWidget, QFormLayout, QLineEdit, QCheckBox, QPushButton, QVBoxLayout, QMessageBox, \
-    QProgressBar
+    QProgressBar, QStyle, QFileDialog, QHBoxLayout
 
 from gui.QueryThread import QueryThread
 
@@ -19,21 +21,41 @@ class QueryWidget(QWidget):
         main_layout.addWidget(title_label)
         layout = QFormLayout()
         layout.setAlignment(Qt.AlignmentFlag.AlignTop)
+
+        # Query
         self.query_line_edit = QLineEdit()
         layout.addRow("Query*", self.query_line_edit)
+
+        # Output file
         self.output_line_edit = QLineEdit()
+        self.output_line_edit.setReadOnly(True)
         self.output_line_edit.setPlaceholderText("output")
-        layout.addRow("Output file name", self.output_line_edit)
+        self.output_button = QPushButton()
+        self.output_button.setIcon(self.style().standardIcon(QStyle.StandardPixmap.SP_DirIcon))
+        self.output_button.clicked.connect(self.getSaveFileName)
+        output_layout = QHBoxLayout()
+        output_layout.addWidget(self.output_line_edit)
+        output_layout.addWidget(self.output_button)
+        output_layout.setStretch(0, 5)
+        output_layout.setStretch(1, 1)
+        layout.addRow("Output file name", output_layout)
+
+        # Number of threads
         self.n_threads_line_edit = QLineEdit()
         self.n_threads_line_edit.setPlaceholderText("5")
         layout.addRow("Number of threads", self.n_threads_line_edit)
+
+        # Merge regions
         self.merge_regions = QCheckBox()
         self.merge_regions.setChecked(True)
         layout.addRow("Merge regions", self.merge_regions)
+
+        # Run button
         self.progress_bar = QProgressBar()
         self.progress_bar.hide()
         self.run_button = QPushButton("Run")
         self.run_button.clicked.connect(self.run_button_clicked)
+
         main_layout.addLayout(layout)
         main_layout.addWidget(self.progress_bar)
         main_layout.addWidget(self.run_button)
@@ -77,3 +99,13 @@ class QueryWidget(QWidget):
         if self.parent_widget:
             for child_widget in self.parent_widget.findChildren(QPushButton):
                 child_widget.setEnabled(enabled)
+
+    def getSaveFileName(self):
+        file_filter = 'Query file (*.csv)'
+        response = QFileDialog.getSaveFileName(
+            parent=self,
+            caption='Select an output file',
+            directory=os.getcwd(),
+            filter=file_filter,
+        )
+        self.output_line_edit.setText(str(response[0]))

@@ -1,5 +1,8 @@
+import os
+
 from PyQt6.QtCore import Qt
-from PyQt6.QtWidgets import QWidget, QLabel, QVBoxLayout, QFormLayout, QLineEdit, QProgressBar, QPushButton, QMessageBox
+from PyQt6.QtWidgets import QWidget, QLabel, QVBoxLayout, QFormLayout, QLineEdit, QProgressBar, QPushButton, \
+    QMessageBox, QFileDialog, QStyle, QHBoxLayout
 
 from gui.KmerCountThread import KmerCountThread
 
@@ -19,19 +22,48 @@ class KmerCountWidget(QWidget):
         self.setLayout(main_layout)
         layout = QFormLayout()
         layout.setAlignment(Qt.AlignmentFlag.AlignTop)
+
+        # Csv file
         self.csv_file_edit = QLineEdit()
-        layout.addRow("Csv file*", self.csv_file_edit)
+        self.csv_file_edit.setReadOnly(True)
+        self.csv_file_button = QPushButton()
+        self.csv_file_button.setIcon(self.style().standardIcon(QStyle.StandardPixmap.SP_DirIcon))
+        self.csv_file_button.clicked.connect(self.getFileName)
+        csv_layout = QHBoxLayout()
+        csv_layout.addWidget(self.csv_file_edit)
+        csv_layout.addWidget(self.csv_file_button)
+        csv_layout.setStretch(0, 5)
+        csv_layout.setStretch(1, 1)
+        layout.addRow("Csv file*", csv_layout)
+
+        # Kmer size
         self.kmer_size_edit = QLineEdit()
         layout.addRow("K*", self.kmer_size_edit)
+
+        # Output file
         self.output_file_edit = QLineEdit()
-        layout.addRow("Output file", self.output_file_edit)
+        self.output_file_edit.setReadOnly(True)
+        self.output_file_button = QPushButton()
+        self.output_file_button.setIcon(self.style().standardIcon(QStyle.StandardPixmap.SP_DirIcon))
+        self.output_file_button.clicked.connect(self.getSaveFileName)
+        output_layout = QHBoxLayout()
+        output_layout.addWidget(self.output_file_edit)
+        output_layout.addWidget(self.output_file_button)
+        output_layout.setStretch(0, 5)
+        output_layout.setStretch(1, 1)
+        layout.addRow("Output file", output_layout)
+
+        # Number of threads
         self.n_threads_edit = QLineEdit()
         self.n_threads_edit.setPlaceholderText("5")
         layout.addRow("Number of threads", self.n_threads_edit)
+
+        # Run button
         self.progress_bar = QProgressBar()
         self.progress_bar.hide()
         self.run_button = QPushButton("Run")
         self.run_button.clicked.connect(self.run_button_clicked)
+
         main_layout.addLayout(layout)
         main_layout.addWidget(self.progress_bar)
         main_layout.addWidget(self.run_button)
@@ -64,15 +96,36 @@ class KmerCountWidget(QWidget):
         self.progress_bar.hide()
         self.setWidgetEnabled(True)
         self.thread = None
-        self.csv_file_edit.clear()
+
         self.kmer_size_edit.clear()
         self.n_threads_edit.clear()
 
     def setWidgetEnabled(self, enabled):
-        self.csv_file_edit.setEnabled(enabled)
+        self.csv_file_button.setEnabled(enabled)
         self.kmer_size_edit.setEnabled(enabled)
         self.n_threads_edit.setEnabled(enabled)
         self.run_button.setEnabled(enabled)
         if self.parent_widget:
             for child_widget in self.parent_widget.findChildren(QPushButton):
                 child_widget.setEnabled(enabled)
+
+    def getFileName(self):
+        file_filter = 'Data File (*.csv)'
+        response = QFileDialog.getOpenFileName(
+            parent=self,
+            caption='Select a file',
+            directory=os.getcwd(),
+            filter=file_filter,
+            initialFilter='Excel File (*.xlsx *.xls)'
+        )
+        self.csv_file_edit.setText(str(response[0]))
+
+    def getSaveFileName(self):
+        file_filter = 'Kmer file (*.csv)'
+        response = QFileDialog.getSaveFileName(
+            parent=self,
+            caption='Select an output file',
+            directory=os.getcwd(),
+            filter=file_filter,
+        )
+        self.output_file_edit.setText(str(response[0]))
