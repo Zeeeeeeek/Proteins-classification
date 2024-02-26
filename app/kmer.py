@@ -1,7 +1,9 @@
+import concurrent.futures
 import threading
 import pandas as pd
 
 from app.KmerCsvWriter import KmerCsvWriter
+
 
 def kmer_count(k, sequence):
     """
@@ -35,24 +37,19 @@ def single_thread_kmer_count(df_path, k: int, output_path):
 
 
 def kmer_count_multithread(df_path, k, output_path, n_threads):
-    chunks = pd.read_csv(df_path, usecols=["region_id", "class_topology_fold_clan", "sequence"], chunksize=n_threads)
+    df = pd.read_csv(df_path, usecols=["region_id", "class_topology_fold_clan", "sequence"])
     writer = KmerCsvWriter(output_path)
 
-    def worker_function(worker_row, worker_k, result_list):
-        result_list.append(
-            (kmer_count(worker_k, worker_row['sequence']), row['region_id'], row['class_topology_fold_clan'],
-             row['sequence'])
+    def worker_function(worker_row, worker_k):
+        return (
+            kmer_count(worker_k, worker_row['sequence']), worker_row['region_id'],
+            worker_row['class_topology_fold_clan'],
+            worker_row['sequence']
         )
 
-    for chunk in chunks:
-        list_of_kmer_counts = []
-        threads = []
-        for _, row in chunk.iterrows():
-            t = threading.Thread(target=worker_function, args=(row, k, list_of_kmer_counts))
-            threads.append(t)
-            t.start()
-        for t in threads:
-            t.join()
-        for tup in list_of_kmer_counts:
+    with concurrent.futures.ThreadPoolExecutor(max_workers=n_threads) as executor:
+        future_to_row = {executor.submit(worker_function, row, k): row for _, row in df.iterrows()}
+        for future in concurrent.futures.as_completed(future_to_row):
+            tup = future.result()
             writer.write_kmer_count(tup[0], tup[1], tup[2], tup[3])
     writer.close()
