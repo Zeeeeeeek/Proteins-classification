@@ -85,6 +85,7 @@ class ModelsWidget(QtWidgets.QWidget):
             )
             self.setWidgetEnabled(False)
             self.thread.finished.connect(self.on_models_finished)
+            self.thread.error.connect(self.on_models_error)
             self.thread.start()
         except Exception as e:
             QMessageBox.critical(self, "Error", str(e))
