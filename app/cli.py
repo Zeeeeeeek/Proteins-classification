@@ -40,23 +40,24 @@ def handle_command(args):
 
 
 def handle_cli_input():
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(description="CLI for the repeatsdb API and kmer counting.")
     subparsers = parser.add_subparsers(title='commands', dest='command')
 
     # Query
     parser_query = subparsers.add_parser('query', help='Run a query on the repeatsdb API')
     parser_query.add_argument('query_string', help='Query string for repeatsdb api', type=str, nargs='+')
-    parser_query.add_argument('-n', '--name', dest='file_name', help='File name (default: output)', default='output')
+    parser_query.add_argument('-n', '--name', dest='file_name', help='Output file name (default: output)',
+                              default='output')
     parser_query.add_argument('-r', '--regions', dest='merge_regions', action='store_true',
-                              help='Merge regions (default: false)')
+                              help='Merge units in regions (default: false)')
     parser_query.add_argument('-t', '--threads', dest='n_threads', help='Number of threads (default: 5)', type=int,
                               default=5)
     # Kmer count
     parser_kmer = subparsers.add_parser('kmer', help='Count kmers in a dataset')
     parser_kmer.add_argument('input', help='Input file name', type=str)
     parser_kmer.add_argument('k', help='Kmer length', type=int, nargs='?', default=0)
-    parser_kmer.add_argument('-n', '--name', dest='file_name', help='File name (default: input_k_mer)', default=None,
-                             type=str)
+    parser_kmer.add_argument('-n', '--name', dest='file_name', help='Output file name (default: input_k_mer)',
+                             default=None, type=str)
     parser_kmer.add_argument('-t', '--threads', dest='n_threads', help='Number of threads (default: 5)', type=int,
                              default=5)
 
@@ -68,7 +69,8 @@ def handle_cli_input():
                                                                          'class_topology_fold_clan'
                                                                          ])
     parser_models.add_argument('method', help='Method', type=str, choices=['cluster', 'classifiers'])
-    parser_models.add_argument('max_sample_size_per_level', help='Max sample size per level', type=int)
+    parser_models.add_argument('max_sample_size_per_level',
+                               help='Max samples for entries with the same specified level', type=int)
 
     # Exit
     subparsers.add_parser('exit', help='Exit the cli')
