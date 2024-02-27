@@ -53,11 +53,6 @@ class KmerCountWidget(QWidget):
         output_layout.setStretch(1, 1)
         layout.addRow("Output file", output_layout)
 
-        # Number of threads
-        self.n_threads_edit = QLineEdit()
-        self.n_threads_edit.setPlaceholderText("5")
-        layout.addRow("Number of threads", self.n_threads_edit)
-
         # Run button
         self.progress_bar = QProgressBar()
         self.progress_bar.hide()
@@ -83,7 +78,6 @@ class KmerCountWidget(QWidget):
             self.thread = KmerCountThread(
                 csv_file,
                 int(kmer_size),
-                int(self.n_threads_edit.text()) if self.n_threads_edit.text() else 5,
                 self.output_file_edit.text()
             )
             self.thread.finished.connect(self.on_kmer_count_finished)
@@ -98,12 +92,10 @@ class KmerCountWidget(QWidget):
         self.thread = None
 
         self.kmer_size_edit.clear()
-        self.n_threads_edit.clear()
 
     def set_widget_enabled(self, enabled):
         self.csv_file_button.setEnabled(enabled)
         self.kmer_size_edit.setEnabled(enabled)
-        self.n_threads_edit.setEnabled(enabled)
         self.run_button.setEnabled(enabled)
         if self.parent_widget:
             for child_widget in self.parent_widget.findChildren(QPushButton):
