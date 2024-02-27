@@ -62,7 +62,7 @@ def get_classifiers():
         "Decision Tree",
         "Random Forest",
         "Random Forest Log Loss",
-        # "Neural Net",
+        "Neural Net",
         "Naive Bayes"
     ]
     classifiers = [
@@ -71,7 +71,7 @@ def get_classifiers():
         DecisionTreeClassifier(random_state=RANDOM_STATE),
         RandomForestClassifier(random_state=RANDOM_STATE),
         RandomForestClassifier(random_state=RANDOM_STATE, criterion='log_loss'),
-        # MLPClassifier(random_state=RANDOM_STATE, max_iter=1000),
+        MLPClassifier(random_state=RANDOM_STATE),
         GaussianNB()
     ]
     return names, classifiers
