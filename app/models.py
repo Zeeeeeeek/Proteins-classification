@@ -118,11 +118,11 @@ def print_results(results):
 
 
 def print_k_fold_results(X, y):
-    cv = KFold(n_splits=10, random_state=RANDOM_STATE, shuffle=True)
+    cv = KFold(n_splits=5, random_state=RANDOM_STATE, shuffle=True)
     names, classifiers = get_classifiers()
     print("K-Fold Cross Validation Results:")
     for index, classifier in enumerate(classifiers):
-        print("=" * 30)
+        print("=" * 30 + "\n")
         print(names[index])
         scores = cross_val_score(classifier, X, y, cv=cv, scoring='accuracy')
         print(f"Accuracy: {scores.mean():.4f}")
