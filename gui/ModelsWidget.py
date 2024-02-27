@@ -104,6 +104,7 @@ class ModelsWidget(QtWidgets.QWidget):
 
     def set_widget_enabled(self, enabled):
         self.csv_file_button.setEnabled(enabled)
+        self.csv_file_edit.setEnabled(enabled)
         self.level_menu.setEnabled(enabled)
         self.method_menu.setEnabled(enabled)
         self.max_samples_edit.setEnabled(enabled)
