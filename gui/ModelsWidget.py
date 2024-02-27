@@ -35,7 +35,7 @@ class ModelsWidget(QtWidgets.QWidget):
         self.csv_file_edit.setReadOnly(True)
         self.csv_file_button = QtWidgets.QPushButton()
         self.csv_file_button.setIcon(self.style().standardIcon(QtWidgets.QStyle.StandardPixmap.SP_DirIcon))
-        self.csv_file_button.clicked.connect(self.getFileName)
+        self.csv_file_button.clicked.connect(self.get_file_name)
         csv_layout = QtWidgets.QHBoxLayout()
         csv_layout.addWidget(self.csv_file_edit)
         csv_layout.addWidget(self.csv_file_button)
@@ -72,7 +72,7 @@ class ModelsWidget(QtWidgets.QWidget):
     def run(self):
         try:
             sys.stdout = EmittingStream()
-            sys.stdout.textWritten.connect(self.normalOutputWritten)
+            sys.stdout.textWritten.connect(self.normal_output_written)
             csv_file = self.csv_file_edit.text()
             if not csv_file:
                 raise ValueError("Error: csv file is required.")
@@ -83,7 +83,7 @@ class ModelsWidget(QtWidgets.QWidget):
                 self.method_menu.currentText().lower(),
                 int(self.max_samples_edit.text()) if self.max_samples_edit.text() else 5
             )
-            self.setWidgetEnabled(False)
+            self.set_widget_enabled(False)
             self.thread.finished.connect(self.on_models_finished)
             self.thread.error.connect(self.on_models_error)
             self.thread.start()
@@ -91,12 +91,18 @@ class ModelsWidget(QtWidgets.QWidget):
             QMessageBox.critical(self, "Error", str(e))
 
     def on_models_finished(self):
-        self.setWidgetEnabled(True)
+        self.set_widget_enabled(True)
         self.thread = None
         sys.stdout = sys.__stdout__
         QMessageBox.information(self, "Success", "Models completed successfully")
 
-    def setWidgetEnabled(self, enabled):
+    def on_models_error(self, exc):
+        self.set_widget_enabled(True)
+        self.thread = None
+        sys.stdout = sys.__stdout__
+        QMessageBox.critical(self, "Error", exc)
+
+    def set_widget_enabled(self, enabled):
         self.csv_file_button.setEnabled(enabled)
         self.level_menu.setEnabled(enabled)
         self.method_menu.setEnabled(enabled)
@@ -105,7 +111,7 @@ class ModelsWidget(QtWidgets.QWidget):
             for child_widget in self.parent.findChildren(QPushButton):
                 child_widget.setEnabled(enabled)
 
-    def getFileName(self):
+    def get_file_name(self):
         file_filter = 'Data File (*.csv)'
         response = QFileDialog.getOpenFileName(
             parent=self,
@@ -116,7 +122,7 @@ class ModelsWidget(QtWidgets.QWidget):
         )
         self.csv_file_edit.setText(str(response[0]))
 
-    def normalOutputWritten(self, text):
+    def normal_output_written(self, text):
         cursor = self.textEdit.textCursor()
         cursor.movePosition(QtGui.QTextCursor.MoveOperation.End)
         cursor.insertText(text)

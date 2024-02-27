@@ -28,7 +28,7 @@ class KmerCountWidget(QWidget):
         self.csv_file_edit.setReadOnly(True)
         self.csv_file_button = QPushButton()
         self.csv_file_button.setIcon(self.style().standardIcon(QStyle.StandardPixmap.SP_DirIcon))
-        self.csv_file_button.clicked.connect(self.getFileName)
+        self.csv_file_button.clicked.connect(self.get_file_name)
         csv_layout = QHBoxLayout()
         csv_layout.addWidget(self.csv_file_edit)
         csv_layout.addWidget(self.csv_file_button)
@@ -45,7 +45,7 @@ class KmerCountWidget(QWidget):
         self.output_file_edit.setReadOnly(True)
         self.output_file_button = QPushButton()
         self.output_file_button.setIcon(self.style().standardIcon(QStyle.StandardPixmap.SP_DirIcon))
-        self.output_file_button.clicked.connect(self.getSaveFileName)
+        self.output_file_button.clicked.connect(self.get_save_file_name)
         output_layout = QHBoxLayout()
         output_layout.addWidget(self.output_file_edit)
         output_layout.addWidget(self.output_file_button)
@@ -79,7 +79,7 @@ class KmerCountWidget(QWidget):
                 raise ValueError("K cannot be empty")
             self.progress_bar.show()
             self.progress_bar.setRange(0, 0)
-            self.setWidgetEnabled(False)
+            self.set_widget_enabled(False)
             self.thread = KmerCountThread(
                 csv_file,
                 int(kmer_size),
@@ -94,13 +94,13 @@ class KmerCountWidget(QWidget):
     def on_kmer_count_finished(self):
         QMessageBox.information(self, "Success", "Kmer count completed successfully")
         self.progress_bar.hide()
-        self.setWidgetEnabled(True)
+        self.set_widget_enabled(True)
         self.thread = None
 
         self.kmer_size_edit.clear()
         self.n_threads_edit.clear()
 
-    def setWidgetEnabled(self, enabled):
+    def set_widget_enabled(self, enabled):
         self.csv_file_button.setEnabled(enabled)
         self.kmer_size_edit.setEnabled(enabled)
         self.n_threads_edit.setEnabled(enabled)
@@ -109,7 +109,7 @@ class KmerCountWidget(QWidget):
             for child_widget in self.parent_widget.findChildren(QPushButton):
                 child_widget.setEnabled(enabled)
 
-    def getFileName(self):
+    def get_file_name(self):
         file_filter = 'Data File (*.csv)'
         response = QFileDialog.getOpenFileName(
             parent=self,
@@ -120,7 +120,7 @@ class KmerCountWidget(QWidget):
         )
         self.csv_file_edit.setText(str(response[0]))
 
-    def getSaveFileName(self):
+    def get_save_file_name(self):
         file_filter = 'Kmer file (*.csv)'
         response = QFileDialog.getSaveFileName(
             parent=self,

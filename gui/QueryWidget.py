@@ -32,7 +32,7 @@ class QueryWidget(QWidget):
         self.output_line_edit.setPlaceholderText("output")
         self.output_button = QPushButton()
         self.output_button.setIcon(self.style().standardIcon(QStyle.StandardPixmap.SP_DirIcon))
-        self.output_button.clicked.connect(self.getSaveFileName)
+        self.output_button.clicked.connect(self.get_save_file_name)
         output_layout = QHBoxLayout()
         output_layout.addWidget(self.output_line_edit)
         output_layout.addWidget(self.output_button)
@@ -68,7 +68,7 @@ class QueryWidget(QWidget):
                 raise ValueError("Query cannot be empty")
             self.progress_bar.show()
             self.progress_bar.setRange(0, 0)
-            self.setWidgetEnabled(False)
+            self.set_widget_enabled(False)
             self.thread = QueryThread(
                 query_text,
                 self.output_line_edit.text() if self.output_line_edit.text() else "output",
@@ -83,13 +83,13 @@ class QueryWidget(QWidget):
     def on_query_finished(self):
         QMessageBox.information(self, "Success", "Query completed successfully")
         self.progress_bar.hide()
-        self.setWidgetEnabled(True)
+        self.set_widget_enabled(True)
         self.thread = None
         self.query_line_edit.clear()
         self.output_line_edit.clear()
         self.n_threads_line_edit.clear()
 
-    def setWidgetEnabled(self, enabled: bool):
+    def set_widget_enabled(self, enabled: bool):
         self.query_line_edit.setEnabled(enabled)
         self.output_line_edit.setEnabled(enabled)
         self.merge_regions.setEnabled(enabled)
@@ -100,7 +100,7 @@ class QueryWidget(QWidget):
             for child_widget in self.parent_widget.findChildren(QPushButton):
                 child_widget.setEnabled(enabled)
 
-    def getSaveFileName(self):
+    def get_save_file_name(self):
         file_filter = 'Query file (*.csv)'
         response = QFileDialog.getSaveFileName(
             parent=self,
