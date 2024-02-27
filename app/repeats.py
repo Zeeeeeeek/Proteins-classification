@@ -1,5 +1,5 @@
 import pandas as pd
-from app.api import pdb_get, mmCIF_get
+from app.api import pdb_get, mmCIF_get, repeatsdb_get
 from Bio.PDB import PDBParser, MMCIFParser
 from io import StringIO
 import threading
@@ -116,7 +116,8 @@ def extract_res_dict(structure, chain_id, start, end):
                         res_dict[str(residue.get_full_id()[3][1])] = residue.get_resname()
                     else:
                         res_dict[str(residue.get_full_id()[3][1]) + residue.get_full_id()[3][2]] = residue.get_resname()
-        if len(res_dict) > 0:  # A model has been found and used, finding other models with the same chain may lead to errors
+        if len(res_dict) > 0:
+            # A model has been found and used, finding other models with the same chain may lead to errors
             return res_dict
     return res_dict
 
@@ -151,14 +152,14 @@ def get_missing_residues(structure, chain_id, start, end):
     for res in structure.header["missing_residues"]:
         if res['chain'] == chain_id and start <= res['ssseq'] <= end:
             if res['insertion'] is not None:
-                id = str(res['ssseq']) + res['insertion']
+                identifier = str(res['ssseq']) + res['insertion']
             else:
-                id = str(res['ssseq'])
-            missing_residues[id] = res['res_name']
+                identifier = str(res['ssseq'])
+            missing_residues[identifier] = res['res_name']
     return missing_residues
 
 
-def lambda_sequence(row):
+def add_sequence_to_row(row):
     pdb_id = row["pdb_id"]
     row_chain = row["pdb_chain"]
     pdb_parser = PDBParser(QUIET=True)
@@ -207,8 +208,14 @@ def split_df_into_n(df, n):
     return [df[i::n] for i in range(n)]
 
 
-def thread_worker(df):
-    df.loc[:, "sequence"] = df.apply(lambda_sequence, axis=1)
+def query_repeatsdb_to_csv(query_classes, merge_regions, n_threads, output_file):
+    if not all(c in ['2', '3', '4', '5'] for c in query_classes):
+        raise ValueError("Query classes must be in  ['2', '3', '4', '5'].")
+    query = "class:" + "%7Cclass:".join(set(query_classes))
+    query += "%2Breviewed:true&show=entries"
+    df = preprocess_from_json(repeatsdb_get("query=" + query), merge_regions, n_threads)
+    df = df[df["class"].isin(query_classes)]
+    df.to_csv(output_file, index=False)
 
 
 def preprocess_from_json(json, regions, n_threads=5):
@@ -226,7 +233,11 @@ def preprocess_from_json(json, regions, n_threads=5):
     df = integrate_regions(df) if regions else differentiate_units_ids(df)
     threads = []
     dfs = split_df_into_n(df, n_threads)
-    warnings.filterwarnings("ignore")
+
+    def thread_worker(worker_df):
+        worker_df.loc[:, "sequence"] = worker_df.apply(add_sequence_to_row, axis=1)
+
+    warnings.filterwarnings("ignore")  # Suppress warnings from BioPython
     for d in dfs:
         t = threading.Thread(target=thread_worker, args=(d,))
         threads.append(t)

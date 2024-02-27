@@ -1,7 +1,7 @@
 import re
+from typing import List
 
-from app.api import repeatsdb_get
-from app.data_preprocessing import preprocess_from_json
+from app.repeats import query_repeatsdb_to_csv
 from app.kmer import single_thread_kmer_count
 from app.models import run_models
 
@@ -13,16 +13,11 @@ def check_query_string(query_string):
         raise ValueError("Query string must be in the form of \"field:value\".")
 
 
-def run_query(query_string, file_name, merge_regions, n_threads):
-    q = "".join(query_string)
-    check_query_string(q)
-    q = q.replace("+", "%2B").replace("|", "%7C")
-    q += "%2Breviewed:true&show=entries"
+def run_repeatsdb_query(query_classes: List[str], file_name, merge_regions, n_threads):
     output = file_name if file_name else "output.csv"
     if not output.endswith(".csv"):
         output += ".csv"
-    preprocess_from_json(repeatsdb_get("query=" + q), merge_regions, n_threads) \
-        .to_csv(file_name, index=False)
+    query_repeatsdb_to_csv(query_classes, merge_regions, n_threads, output)
 
 
 def run_kmer_count(input_file, k, output_file):

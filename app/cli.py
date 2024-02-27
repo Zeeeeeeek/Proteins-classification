@@ -1,11 +1,11 @@
 import argparse
 import time
 
-from app.controller import run_query, run_kmer_count, run_models_on_kmers
+from app.controller import run_repeatsdb_query, run_kmer_count, run_models_on_kmers
 
 
 def handle_query(args):
-    run_query("".join(args.query_string), args.file_name, args.merge_regions, args.n_threads)
+    run_repeatsdb_query(args.query_classes, args.file_name, args.merge_regions, args.n_threads)
 
 
 def handle_kmer(args):
@@ -45,7 +45,8 @@ def handle_cli_input():
 
     # Query
     parser_query = subparsers.add_parser('query', help='Run a query on the repeatsdb API')
-    parser_query.add_argument('query_string', help='Query string for repeatsdb api', type=str, nargs='+')
+    parser_query.add_argument('query_classes', help='Query string for repeatsdb api', type=str, nargs='+',
+                              choices=['2', '3', '4', '5'])
     parser_query.add_argument('-n', '--name', dest='file_name', help='Output file name (default: output)',
                               default='output')
     parser_query.add_argument('-r', '--regions', dest='merge_regions', action='store_true',
