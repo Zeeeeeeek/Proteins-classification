@@ -81,17 +81,28 @@ class KmerCountWidget(QWidget):
                 self.output_file_edit.text()
             )
             self.thread.finished.connect(self.on_kmer_count_finished)
+            self.thread.error.connect(self.on_kmer_count_error)
             self.thread.start()
         except ValueError as e:
             QMessageBox.critical(self, "Error", str(e))
 
-    def on_kmer_count_finished(self):
-        QMessageBox.information(self, "Success", "Kmer count completed successfully")
+    def on_kmer_count_end(self, title, message, success):
+        if success:
+            QMessageBox.information(self, title, message)
+        else:
+            QMessageBox.critical(self, title, message)
         self.progress_bar.hide()
         self.set_widget_enabled(True)
         self.thread = None
-
         self.kmer_size_edit.clear()
+        self.csv_file_edit.clear()
+        self.output_file_edit.clear()
+
+    def on_kmer_count_error(self, exc):
+        self.on_kmer_count_end("Error", str(exc), False)
+
+    def on_kmer_count_finished(self):
+        self.on_kmer_count_end("Success", "Kmer count finished", True)
 
     def set_widget_enabled(self, enabled):
         self.csv_file_button.setEnabled(enabled)

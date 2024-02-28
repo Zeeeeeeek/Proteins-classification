@@ -21,7 +21,6 @@ class ModelsThread(QtCore.QThread):
                 self.method,
                 self.max_sample_size_per_level
             )
+            self.finished.emit()
         except Exception as e:
             self.error.emit(str(e))
-        finally:
-            self.finished.emit()

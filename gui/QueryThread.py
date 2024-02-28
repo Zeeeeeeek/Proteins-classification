@@ -5,6 +5,7 @@ from app.controller import run_repeatsdb_query
 
 class QueryThread(QThread):
     finished = pyqtSignal()
+    error = pyqtSignal(str)
 
     def __init__(self, query_classes, output_text, merge_regions, value):
         QThread.__init__(self)
@@ -14,10 +15,13 @@ class QueryThread(QThread):
         self.value = value
 
     def run(self):
-        run_repeatsdb_query(
-            self.query_classes,
-            self.output_text if self.output_text else "output",
-            self.merge_regions,
-            self.value
-        )
-        self.finished.emit()
+        try:
+            run_repeatsdb_query(
+                self.query_classes,
+                self.output_text if self.output_text else "output",
+                self.merge_regions,
+                self.value
+            )
+            self.finished.emit()
+        except Exception as e:
+            self.error.emit(str(e))

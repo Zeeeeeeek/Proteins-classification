@@ -90,12 +90,16 @@ class QueryWidget(QWidget):
                 int(self.n_threads_line_edit.text()) if self.n_threads_line_edit.text() else 5
             )
             self.thread.finished.connect(self.on_query_finished)
+            self.thread.error.connect(self.on_query_error)
             self.thread.start()
         except ValueError as e:
             QMessageBox.critical(self, "Error", str(e))
 
-    def on_query_finished(self):
-        QMessageBox.information(self, "Success", "Query completed successfully")
+    def on_query_end(self, title, message, success):
+        if success:
+            QMessageBox.information(self, title, message)
+        else:
+            QMessageBox.critical(self, title, message)
         self.progress_bar.hide()
         self.set_widget_enabled(True)
         self.thread = None
@@ -105,6 +109,12 @@ class QueryWidget(QWidget):
         self.class_5.setChecked(False)
         self.output_line_edit.clear()
         self.n_threads_line_edit.clear()
+
+    def on_query_error(self, message):
+        self.on_query_end("Error", message, False)
+
+    def on_query_finished(self):
+        self.on_query_end("Success", "Query completed successfully", True)
 
     def set_widget_enabled(self, enabled: bool):
         self.class_2.setEnabled(enabled)
