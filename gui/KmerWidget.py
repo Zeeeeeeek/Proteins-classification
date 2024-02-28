@@ -105,6 +105,8 @@ class KmerCountWidget(QWidget):
         self.on_kmer_count_end("Success", "Kmer count finished", True)
 
     def set_widget_enabled(self, enabled):
+        self.csv_file_edit.setEnabled(enabled)
+        self.output_file_edit.setEnabled(enabled)
         self.csv_file_button.setEnabled(enabled)
         self.kmer_size_edit.setEnabled(enabled)
         self.run_button.setEnabled(enabled)
