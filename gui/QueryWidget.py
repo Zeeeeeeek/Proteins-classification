@@ -23,8 +23,16 @@ class QueryWidget(QWidget):
         layout.setAlignment(Qt.AlignmentFlag.AlignTop)
 
         # Query
-        self.query_line_edit = QLineEdit()
-        layout.addRow("Query*", self.query_line_edit)
+        self.classes_layout = QHBoxLayout()
+        self.class_2 = QCheckBox("2")
+        self.class_3 = QCheckBox("3")
+        self.class_4 = QCheckBox("4")
+        self.class_5 = QCheckBox("5")
+        self.classes_layout.addWidget(self.class_2)
+        self.classes_layout.addWidget(self.class_3)
+        self.classes_layout.addWidget(self.class_4)
+        self.classes_layout.addWidget(self.class_5)
+        layout.addRow("Query classes", self.classes_layout)
 
         # Output file
         self.output_line_edit = QLineEdit()
@@ -61,16 +69,22 @@ class QueryWidget(QWidget):
         main_layout.addWidget(self.run_button)
         self.setLayout(main_layout)
 
+    def checkbox_state_changed(self, state):
+        if state == Qt.CheckState.Checked:
+            selected_text = self.sender().text()
+            print(f"Checkbox selezionata: {selected_text}")
+
     def run_button_clicked(self):
         try:
-            query_text = self.query_line_edit.text()
-            if not query_text:
+            classes = self.get_classes()
+            print(classes)
+            if not classes:
                 raise ValueError("Query cannot be empty")
             self.progress_bar.show()
             self.progress_bar.setRange(0, 0)
             self.set_widget_enabled(False)
             self.thread = QueryThread(
-                query_text,
+                classes,
                 self.output_line_edit.text() if self.output_line_edit.text() else "output",
                 self.merge_regions.isChecked(),
                 int(self.n_threads_line_edit.text()) if self.n_threads_line_edit.text() else 5
@@ -85,12 +99,18 @@ class QueryWidget(QWidget):
         self.progress_bar.hide()
         self.set_widget_enabled(True)
         self.thread = None
-        self.query_line_edit.clear()
+        self.class_2.setChecked(False)
+        self.class_3.setChecked(False)
+        self.class_4.setChecked(False)
+        self.class_5.setChecked(False)
         self.output_line_edit.clear()
         self.n_threads_line_edit.clear()
 
     def set_widget_enabled(self, enabled: bool):
-        self.query_line_edit.setEnabled(enabled)
+        self.class_2.setEnabled(enabled)
+        self.class_3.setEnabled(enabled)
+        self.class_4.setEnabled(enabled)
+        self.class_5.setEnabled(enabled)
         self.output_line_edit.setEnabled(enabled)
         self.merge_regions.setEnabled(enabled)
         self.run_button.setEnabled(enabled)
@@ -109,3 +129,15 @@ class QueryWidget(QWidget):
             filter=file_filter,
         )
         self.output_line_edit.setText(str(response[0]))
+
+    def get_classes(self):
+        result = []
+        if self.class_2.isChecked():
+            result.append('2')
+        if self.class_3.isChecked():
+            result.append('3')
+        if self.class_4.isChecked():
+            result.append('4')
+        if self.class_5.isChecked():
+            result.append('5')
+        return result
