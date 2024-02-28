@@ -14,7 +14,7 @@ from sklearn.svm import SVC
 from sklearn.tree import DecisionTreeClassifier
 
 """
-Usage: python models.py <path_to_csv> <level> <method> <max_sample_size_per_level> [random_state]
+Usage: python models.py <path_to_csv> <level> <method> <max_sample_size_per_level> <k> [random_state]
 """
 
 
@@ -34,17 +34,6 @@ def get_y_and_X(df, level: str):
         case "clan":
             X['label'] = df.apply(lambda row: row["class_topology_fold_clan"].split(".")[3] if len(
                 row["class_topology_fold_clan"].split(".")) > 3 else np.nan, axis=1)
-        case "class_topology":
-            X['label'] = df.apply(
-                lambda row: row["class_topology_fold_clan"][:3] if len(
-                    row["class_topology_fold_clan"]) >= 3 else np.nan, axis=1)
-        case "class_topology_fold":
-            X['label'] = df.apply(
-                lambda row: row["class_topology_fold_clan"][:5] if len(
-                    row["class_topology_fold_clan"]) >= 5 else np.nan, axis=1)
-        case "class_topology_fold_clan":
-            X['label'] = df.apply(lambda row: row["class_topology_fold_clan"] if len(
-                row["class_topology_fold_clan"]) >= 7 else np.nan, axis=1)
         case _:
             raise ValueError(f"Error: {level} is not a valid level. Please use one of the following: "
                              f"class, topology, fold, clan, class_topology, class_topology_fold, "
@@ -164,7 +153,7 @@ def get_sampled_regions(df_path, level: str, sample_size: int, random_state):
             'region_id'].tolist()
 
 
-def read_csv_of_regions(df_path, regions):
+def read_csv_of_regions(df_path, regions, k):
     index = 0
     rows = []
     reg_copy = regions.copy()
@@ -172,28 +161,31 @@ def read_csv_of_regions(df_path, regions):
         for line in file:
             if index == 0:
                 columns = line.strip().split(",")
+                # Filter all kmer columns that are not in the range [1, k], excluding the first 3 columns
+                columns_indexes = [0, 1, 2] + [i + 3 for i, c in enumerate(columns[3:]) if len(c) <= k]
+                columns = [columns[i] for i in columns_indexes]
                 index += 1
-            if line.strip().split(",")[0] in reg_copy:
-                split = line.strip().split(",")
+                continue
+            split = line.strip().split(",")
+            if split[0] in reg_copy:
                 row = []
-                column_index = 0
-                for s in split:
-                    if s == '':
-                        row.append(0)
-                        continue
-                    if column_index > 2:
-                        row.append(int(s))
+                for i in columns_indexes:
+                    if i > 2:
+                        row.append(int(split[i]) if split[i] != '' else 0)
                     else:
-                        row.append(s)
-                        column_index += 1
+                        row.append(split[i])
                 rows.append(row)
-                reg_copy.remove(line.strip().split(",")[0])
+                try:
+                    reg_copy.remove(split[0])
+                except ValueError:
+                    print(f"Error: region {split[0]} not found in regions list.")
+                    raise
             if len(reg_copy) == 0:
                 break
     return pd.DataFrame(rows, columns=columns)
 
 
-def run_models(df_path, level, method, max_sample_size_per_level, random_state=42):
+def run_models(df_path, level, method, max_sample_size_per_level, k, random_state=42):
     if method not in ['cluster', 'classifiers']:
         raise ValueError("Error: method must be either 'cluster' or 'classifiers'.")
     if max_sample_size_per_level < 1 or not isinstance(max_sample_size_per_level, int):
@@ -202,7 +194,7 @@ def run_models(df_path, level, method, max_sample_size_per_level, random_state=4
     print("\tSampling regions...")
     sampled_regions = get_sampled_regions(df_path, level, max_sample_size_per_level, random_state)
     print("\tReading data...")
-    df = read_csv_of_regions(df_path, sampled_regions)
+    df = read_csv_of_regions(df_path, sampled_regions, k)
     y, X = get_y_and_X(df, level)
     if 'sequence' in X.columns:
         X.drop(columns=['sequence'], inplace=True)
@@ -219,7 +211,7 @@ def run_models(df_path, level, method, max_sample_size_per_level, random_state=4
 
 
 def main():
-    run_models(sys.argv[1], sys.argv[2], sys.argv[3], int(sys.argv[4]))
+    run_models(sys.argv[1], sys.argv[2], sys.argv[3], int(sys.argv[4]), int(sys.argv[5]))
 
 
 if __name__ == "__main__":

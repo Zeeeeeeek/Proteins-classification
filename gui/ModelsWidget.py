@@ -45,14 +45,17 @@ class ModelsWidget(QtWidgets.QWidget):
 
         # Level
         self.level_menu = QtWidgets.QComboBox()
-        self.level_menu.addItems(["Class", "Topology", "Fold", "Clan", "Class_topology",
-                                  "Class_topology_fold", "Class_topology_fold_clan"])
+        self.level_menu.addItems(["Class", "Topology", "Fold", "Clan"])
         form_layout.addRow("Level*", self.level_menu)
 
         # Method
         self.method_menu = QtWidgets.QComboBox()
         self.method_menu.addItems(["Classifiers", "Clustering"])
         form_layout.addRow("Method*", self.method_menu)
+
+        # K
+        self.k_edit = QtWidgets.QLineEdit()
+        form_layout.addRow("K*", self.k_edit)
 
         # Max samples per level
         self.max_samples_edit = QtWidgets.QLineEdit()
@@ -81,11 +84,14 @@ class ModelsWidget(QtWidgets.QWidget):
             csv_file = self.csv_file_edit.text()
             if not csv_file:
                 raise ValueError("Error: csv file is required.")
+            if self.k_edit.text() == "" or int(self.k_edit.text()) < 1:
+                raise ValueError("Error: k must be an integer greater than 0.")
             self.textEdit.clear()
             self.thread = ModelsThread(
                 csv_file,
                 self.level_menu.currentText().lower(),
                 self.method_menu.currentText().lower(),
+                int(self.k_edit.text()),
                 int(self.max_samples_edit.text()) if self.max_samples_edit.text() else 5,
                 int(self.random_state_edit.text()) if self.random_state_edit.text() else 42
             )
