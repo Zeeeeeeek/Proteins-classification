@@ -15,7 +15,7 @@ def handle_kmer(args):
 def handle_models(args):
     if args.max_sample_size_per_level < 1:
         raise ValueError("Error: max_sample_size_per_level must be an integer greater than 0.")
-    run_models_on_kmers(args.path, args.level, args.method, args.max_sample_size_per_level)
+    run_models_on_kmers(args.path, args.level, args.method, args.max_sample_size_per_level, args.random_state)
 
 
 def handle_command(args):
@@ -70,6 +70,8 @@ def handle_cli_input():
     parser_models.add_argument('method', help='Method', type=str, choices=['cluster', 'classifiers'])
     parser_models.add_argument('max_sample_size_per_level',
                                help='Max samples for entries with the same specified level', type=int)
+    parser_models.add_argument('-r', '--random', dest='random_state', help='Random state (default: 42)', type=int,
+                               default=42)
 
     # Exit
     subparsers.add_parser('exit', help='Exit the cli')

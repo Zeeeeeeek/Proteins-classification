@@ -19,10 +19,11 @@ def run_kmer_count(input_file, k, output_file):
         output_name += ".csv"
     single_thread_kmer_count(input_name, k, output_name)
 
-def run_models_on_kmers(path, level, method, max_sample_size_per_level):
+def run_models_on_kmers(path, level, method, max_sample_size_per_level, random_state=42):
     run_models(
         path if path.endswith(".csv") else path + ".csv",
         level,
         method,
-        max_sample_size_per_level
+        max_sample_size_per_level,
+        random_state
     )

@@ -59,6 +59,11 @@ class ModelsWidget(QtWidgets.QWidget):
         self.max_samples_edit.setPlaceholderText("5")
         form_layout.addRow("Max samples per level", self.max_samples_edit)
 
+        # Random state
+        self.random_state_edit = QtWidgets.QLineEdit()
+        self.random_state_edit.setPlaceholderText("42")
+        form_layout.addRow("Random state", self.random_state_edit)
+
         layout = QtWidgets.QVBoxLayout()
         self.setLayout(layout)
         button = QtWidgets.QPushButton("Start")
@@ -81,7 +86,8 @@ class ModelsWidget(QtWidgets.QWidget):
                 csv_file,
                 self.level_menu.currentText().lower(),
                 self.method_menu.currentText().lower(),
-                int(self.max_samples_edit.text()) if self.max_samples_edit.text() else 5
+                int(self.max_samples_edit.text()) if self.max_samples_edit.text() else 5,
+                int(self.random_state_edit.text()) if self.random_state_edit.text() else 42
             )
             self.set_widget_enabled(False)
             self.thread.finished.connect(self.on_models_finished)

@@ -14,9 +14,8 @@ from sklearn.svm import SVC
 from sklearn.tree import DecisionTreeClassifier
 
 """
-Usage: python models.py <path_to_csv> <level> <method> <max_sample_size_per_level>
+Usage: python models.py <path_to_csv> <level> <method> <max_sample_size_per_level> [random_state]
 """
-RANDOM_STATE = 42
 
 
 def get_y_and_X(df, level: str):
@@ -55,7 +54,7 @@ def get_y_and_X(df, level: str):
                                                    "region_id", "label"])
 
 
-def get_classifiers():
+def get_classifiers(random_state):
     names = [
         "K Nearest Neighbors",
         "SVM",
@@ -67,19 +66,19 @@ def get_classifiers():
     ]
     classifiers = [
         KNeighborsClassifier(),
-        SVC(random_state=RANDOM_STATE),
-        DecisionTreeClassifier(random_state=RANDOM_STATE),
-        RandomForestClassifier(random_state=RANDOM_STATE),
-        RandomForestClassifier(random_state=RANDOM_STATE, criterion='log_loss'),
-        MLPClassifier(random_state=RANDOM_STATE),
+        SVC(random_state=random_state),
+        DecisionTreeClassifier(random_state=random_state),
+        RandomForestClassifier(random_state=random_state),
+        RandomForestClassifier(random_state=random_state, criterion='log_loss'),
+        MLPClassifier(random_state=random_state),
         GaussianNB()
     ]
     return names, classifiers
 
 
-def get_classifiers_results(X, y):
-    names, classifiers = get_classifiers()
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=RANDOM_STATE)
+def get_classifiers_results(X, y, random_state):
+    names, classifiers = get_classifiers(random_state)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=random_state)
     results = {}
     for index, classifier in enumerate(classifiers):
         classifier_name = names[index]
@@ -117,9 +116,9 @@ def print_results(results):
         print()
 
 
-def print_k_fold_results(X, y):
-    cv = KFold(n_splits=5, random_state=RANDOM_STATE, shuffle=True)
-    names, classifiers = get_classifiers()
+def print_k_fold_results(X, y, random_state):
+    cv = KFold(n_splits=5, random_state=random_state, shuffle=True)
+    names, classifiers = get_classifiers(random_state)
     print("K-Fold Cross Validation Results:")
     for index, classifier in enumerate(classifiers):
         print("=" * 30 + "\n")
@@ -151,7 +150,7 @@ def cluster(X, label_dict):
     print_cluster_metrics(label_dict, labels_pred, "average")
 
 
-def get_sampled_regions(df_path, level: str, sample_size: int):
+def get_sampled_regions(df_path, level: str, sample_size: int, random_state):
     df = pd.read_csv(df_path, usecols=["region_id", "class_topology_fold_clan"],
                      dtype={"region_id": str, "class_topology_fold_clan": str})
     df['label'], _ = get_y_and_X(df, level)
@@ -159,7 +158,10 @@ def get_sampled_regions(df_path, level: str, sample_size: int):
     for key, count in counter.items():
         if count > sample_size:
             counter[key] = sample_size
-    return df.groupby('label').apply(lambda x: x.sample(n=counter[x.name]), include_groups=False)['region_id'].tolist()
+    return \
+        df.groupby('label').apply(lambda x: x.sample(n=counter[x.name], random_state=random_state),
+                                  include_groups=False)[
+            'region_id'].tolist()
 
 
 def read_csv_of_regions(df_path, regions):
@@ -191,14 +193,14 @@ def read_csv_of_regions(df_path, regions):
     return pd.DataFrame(rows, columns=columns)
 
 
-def run_models(df_path, level, method, max_sample_size_per_level):
+def run_models(df_path, level, method, max_sample_size_per_level, random_state=42):
     if method not in ['cluster', 'classifiers']:
         raise ValueError("Error: method must be either 'cluster' or 'classifiers'.")
     if max_sample_size_per_level < 1 or not isinstance(max_sample_size_per_level, int):
         raise ValueError("Error: max_sample_size_per_level must be an integer greater than 0.")
     print("Reading CSV...")
     print("\tSampling regions...")
-    sampled_regions = get_sampled_regions(df_path, level, max_sample_size_per_level)
+    sampled_regions = get_sampled_regions(df_path, level, max_sample_size_per_level, random_state)
     print("\tReading data...")
     df = read_csv_of_regions(df_path, sampled_regions)
     y, X = get_y_and_X(df, level)
@@ -210,9 +212,9 @@ def run_models(df_path, level, method, max_sample_size_per_level):
         cluster(X, y)
     else:
         print("Running classifiers...")
-        results = get_classifiers_results(X, y)
+        results = get_classifiers_results(X, y, random_state)
         print_results(results)
-        print_k_fold_results(X, y)
+        print_k_fold_results(X, y, random_state)
     print("Done.")
 
 
