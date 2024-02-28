@@ -47,9 +47,9 @@ def handle_cli_input():
     parser_query = subparsers.add_parser('query', help='Run a query on the repeatsdb API')
     parser_query.add_argument('query_classes', help='Query string for repeatsdb api', type=str, nargs='+',
                               choices=['2', '3', '4', '5'])
-    parser_query.add_argument('-n', '--name', dest='file_name', help='Output file name (default: output)',
+    parser_query.add_argument('-o', '--output', dest='file_name', help='Output file name (default: output)',
                               default='output')
-    parser_query.add_argument('-r', '--regions', dest='merge_regions', action='store_true',
+    parser_query.add_argument('-m', '--merge_regions', dest='merge_regions', action='store_true',
                               help='Merge units in regions (default: false)')
     parser_query.add_argument('-t', '--threads', dest='n_threads', help='Number of threads (default: 5)', type=int,
                               default=5)
@@ -57,16 +57,14 @@ def handle_cli_input():
     parser_kmer = subparsers.add_parser('kmer', help='Count kmers in a dataset')
     parser_kmer.add_argument('input', help='Input file name', type=str)
     parser_kmer.add_argument('k', help='Kmer length', type=int, nargs='?', default=0)
-    parser_kmer.add_argument('-n', '--name', dest='file_name', help='Output file name (default: input_k_mer)',
+    parser_kmer.add_argument('-o', '--output', dest='file_name',
+                             help='Output file name (default: \'input_file_name\'_k_mer)',
                              default=None, type=str)
 
     # Models
     parser_models = subparsers.add_parser('models', help='Run models on kmer dataset')
     parser_models.add_argument('path', help='Path to the dataset', type=str)
-    parser_models.add_argument('level', help='Level', type=str, choices=['clan', 'fold', 'class', 'topology',
-                                                                         'class_topology', 'class_topology_fold',
-                                                                         'class_topology_fold_clan'
-                                                                         ])
+    parser_models.add_argument('level', help='Level', type=str, choices=['clan', 'fold', 'class', 'topology'])
     parser_models.add_argument('method', help='Method', type=str, choices=['cluster', 'classifiers'])
     parser_models.add_argument('k', help='Kmer length', type=int)
     parser_models.add_argument('max_sample_size_per_level',
