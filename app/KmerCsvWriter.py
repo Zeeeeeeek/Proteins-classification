@@ -10,12 +10,10 @@ class KmerCsvWriter:
         self.last_index = 0
         if os.path.exists("./rows.tmp"):
             os.remove("./rows.tmp")
-        if os.path.exists("./columns.tmp"):
-            os.remove("./columns.tmp")
 
     def write_kmer_count(self, kmers: Dict[str, int], region_id: str, class_topology_fold_clan: str, sequence: str):
         if not all(kmer in self.kmer_column_indexes for kmer in kmers):
-            self.write_columns_row(kmers.keys())
+            self.add_columns(kmers.keys())
         with open("rows.tmp", "a") as file:
             file.write(f"{region_id}{self.separator}{class_topology_fold_clan}{self.separator}{sequence}")
             ordered_kmers = sorted(kmers, key=lambda x: self.kmer_column_indexes[x])
@@ -29,37 +27,30 @@ class KmerCsvWriter:
                 expected_index += 1
             file.write("\n")
 
-    def write_columns_row(self, new_columns):
+    def add_columns(self, new_columns):
         if len(new_columns) == 0:
             return
-        with open("columns.tmp", "w") as file:
-            file.write(f"region_id{self.separator}class_topology_fold_clan{self.separator}sequence")
-            if len(self.kmer_column_indexes) > 0:
-                sorted_columns = sorted(self.kmer_column_indexes, key=lambda x: self.kmer_column_indexes[x])
-                for column in sorted_columns:
-                    file.write(f"{self.separator}{column}")
-            for column in [c for c in new_columns if c not in self.kmer_column_indexes]:
-                file.write(f"{self.separator}{column}")
-                self.kmer_column_indexes[column] = self.last_index
-                self.last_index += 1
+        for column in [c for c in new_columns if c not in self.kmer_column_indexes]:
+            self.kmer_column_indexes[column] = self.last_index
+            self.last_index += 1
 
     def close(self):
-        with open("columns.tmp", "r") as columns_file:
-            columns = columns_file.read()
-            with open(self.output_path, "w") as file:
-                file.write(columns)
-                file.write("\n")
-            columns_separator_count = columns.count(self.separator)
-            del columns
+        with open(self.output_path, "w") as file:
+            file.write(f"region_id{self.separator}class_topology_fold_clan{self.separator}sequence")
+            sorted_columns = sorted(self.kmer_column_indexes, key=lambda x: self.kmer_column_indexes[x])
+            for column in sorted_columns:
+                file.write(f"{self.separator}{column}")
+            file.write("\n")
         with open("rows.tmp", "r") as rows_file:
             for row in rows_file:
                 with open(self.output_path, "a") as file:
                     stripped_row = row.strip()
                     if stripped_row != "":
                         file.write(stripped_row)
-                        if stripped_row.count(self.separator) != columns_separator_count:
-                            for _ in range(columns_separator_count - stripped_row.count(self.separator)):
+                        cells_count = stripped_row.count(
+                            self.separator) + 1  # +1 because the last cell doesn't have a separator
+                        if cells_count != len(self.kmer_column_indexes):
+                            for _ in range(len(self.kmer_column_indexes) - cells_count):
                                 file.write(f"{self.separator}")
                         file.write("\n")
-        os.remove("columns.tmp")
         os.remove("rows.tmp")
