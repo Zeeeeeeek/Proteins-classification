@@ -2,7 +2,7 @@ import os
 import sys
 
 from PyQt6 import QtWidgets, QtGui, QtCore
-from PyQt6.QtWidgets import QFileDialog, QMessageBox, QPushButton
+from PyQt6.QtWidgets import QFileDialog, QMessageBox
 
 from gui.ModelsThread import ModelsThread
 
