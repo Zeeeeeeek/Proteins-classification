@@ -137,6 +137,10 @@ def cluster(X, label_dict):
     model = AgglomerativeClustering(n_clusters=len(label_dict), linkage='average')
     labels_pred = model.fit_predict(X)
     print_cluster_metrics(label_dict, labels_pred, "average")
+    # KMeans
+    model = AgglomerativeClustering(n_clusters=len(label_dict), linkage='ward')
+    labels_pred = model.fit_predict(X)
+    print_cluster_metrics(label_dict, labels_pred, "ward")
 
 
 def get_sampled_regions(df_path, level: str, sample_size: int, random_state):
@@ -186,7 +190,7 @@ def read_csv_of_regions(df_path, regions, k):
 
 
 def run_models(df_path, level, method, max_sample_size_per_level, k, random_state=42):
-    if method not in ['cluster', 'classifiers']:
+    if method not in ['clustering', 'classifiers']:
         raise ValueError("Error: method must be either 'cluster' or 'classifiers'.")
     if max_sample_size_per_level < 1 or not isinstance(max_sample_size_per_level, int):
         raise ValueError("Error: max_sample_size_per_level must be an integer greater than 0.")
@@ -199,7 +203,7 @@ def run_models(df_path, level, method, max_sample_size_per_level, k, random_stat
     if 'sequence' in X.columns:
         X.drop(columns=['sequence'], inplace=True)
     print("Data read.")
-    if method == 'cluster':
+    if method == 'clustering':
         print("Clustering...")
         cluster(X, y)
     else:

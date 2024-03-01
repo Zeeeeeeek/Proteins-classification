@@ -65,6 +65,11 @@ class MainWindow(QMainWindow):
         self.stacked_widget.setCurrentIndex(2)
         self.setFixedSize(400, 450)
 
+    def set_enabled_toolbar(self, enabled):
+        self.query_button.setEnabled(enabled)
+        self.kmer_button.setEnabled(enabled)
+        self.models_button.setEnabled(enabled)
+
 
 def run():
     app = QApplication([])

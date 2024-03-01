@@ -69,11 +69,11 @@ class ModelsWidget(QtWidgets.QWidget):
 
         layout = QtWidgets.QVBoxLayout()
         self.setLayout(layout)
-        button = QtWidgets.QPushButton("Start")
-        button.clicked.connect(self.run)
+        self.button = QtWidgets.QPushButton("Start")
+        self.button.clicked.connect(self.run)
         layout.addWidget(title_label)
         layout.addLayout(form_layout)
-        layout.addWidget(button)
+        layout.addWidget(self.button)
         layout.addWidget(self.textEdit)
         self.thread = None
 
@@ -115,14 +115,11 @@ class ModelsWidget(QtWidgets.QWidget):
         QMessageBox.critical(self, "Error", exc)
 
     def set_widget_enabled(self, enabled):
-        self.csv_file_button.setEnabled(enabled)
-        self.csv_file_edit.setEnabled(enabled)
-        self.level_menu.setEnabled(enabled)
-        self.method_menu.setEnabled(enabled)
-        self.max_samples_edit.setEnabled(enabled)
+        for child in [self.csv_file_button, self.csv_file_edit, self.level_menu, self.method_menu, self.k_edit,
+                      self.max_samples_edit, self.random_state_edit, self.button]:
+            child.setEnabled(enabled)
         if self.parent:
-            for child_widget in self.parent.findChildren(QPushButton):
-                child_widget.setEnabled(enabled)
+            self.parent.set_enabled_toolbar(enabled)
 
     def get_file_name(self):
         file_filter = 'Data File (*.csv)'

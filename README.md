@@ -55,7 +55,7 @@ Trains Machine Learning models using the input file and prints the results.
 #### Parameters:
 - `input_file`: Input file name.
 - `level`: Level of the classification. Options are: 'class', 'topology', 'fold', 'clan'.
-- `method`: Method to use. Options are: classifiers, cluster.
+- `method`: Method to use. Options are: classifiers, clustering.
 - `k`: Size of the k-mer. Must be an integer greater than 0.
 - `max_sample_size_per_level`: Maximum sample size per level. Must be an integer greater than 0.
 - `-r, --random_state`: Random state for the models and samples (default: 42).

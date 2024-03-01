@@ -65,7 +65,7 @@ def handle_cli_input():
     parser_models = subparsers.add_parser('models', help='Run models on kmer dataset')
     parser_models.add_argument('path', help='Path to the dataset', type=str)
     parser_models.add_argument('level', help='Level', type=str, choices=['clan', 'fold', 'class', 'topology'])
-    parser_models.add_argument('method', help='Method', type=str, choices=['cluster', 'classifiers'])
+    parser_models.add_argument('method', help='Method', type=str, choices=['clustering', 'classifiers'])
     parser_models.add_argument('k', help='Kmer length', type=int)
     parser_models.add_argument('max_sample_size_per_level',
                                help='Max samples for entries with the same specified level', type=int)
