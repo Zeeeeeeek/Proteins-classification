@@ -49,8 +49,8 @@ class KmerCsvWriter:
                         file.write(stripped_row)
                         cells_count = stripped_row.count(
                             self.separator) + 1  # +1 because the last cell doesn't have a separator
-                        if cells_count != len(self.kmer_column_indexes):
-                            for _ in range(len(self.kmer_column_indexes) - cells_count):
+                        if cells_count != len(self.kmer_column_indexes) + 3: # +3 because of the first 3 columns
+                            for _ in range(len(self.kmer_column_indexes) - cells_count + 3):
                                 file.write(f"{self.separator}")
                         file.write("\n")
         os.remove("rows.tmp")
