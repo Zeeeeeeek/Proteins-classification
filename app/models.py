@@ -109,28 +109,30 @@ def print_k_fold_results(X, y, random_state):
 
 def print_cluster_metrics(labels_true, labels_pred, method: str):
     print("=" * 30)
-    print(f"Method: {method}")
+    print(f"{method}")
     print("\tRand_score", metrics.rand_score(labels_true, labels_pred))
-    print("\tadjusted_rand_score", metrics.adjusted_rand_score(labels_true, labels_pred))
     print("\tHomogeneity_score", metrics.homogeneity_score(labels_true, labels_pred))
     print("\tCompleteness_score", metrics.completeness_score(labels_true, labels_pred))
-    print("\tfowlkes_mallows_score", metrics.fowlkes_mallows_score(labels_true, labels_pred))
 
 
-def cluster(X, label_dict):
-    model = AgglomerativeClustering(n_clusters=len(label_dict), linkage='single')
-    labels_pred = model.fit_predict(X)
-    print_cluster_metrics(label_dict, labels_pred, "single")
-    model = AgglomerativeClustering(n_clusters=len(label_dict), linkage='complete')
-    labels_pred = model.fit_predict(X)
-    print_cluster_metrics(label_dict, labels_pred, "complete")
-    model = AgglomerativeClustering(n_clusters=len(label_dict), linkage='average')
-    labels_pred = model.fit_predict(X)
-    print_cluster_metrics(label_dict, labels_pred, "average")
-    # KMeans
-    model = AgglomerativeClustering(n_clusters=len(label_dict), linkage='ward')
-    labels_pred = model.fit_predict(X)
-    print_cluster_metrics(label_dict, labels_pred, "ward")
+def clustering(X, labels, random_state):
+    clusters = [
+        AgglomerativeClustering(n_clusters=len(labels)),
+        DBSCAN(),
+        AffinityPropagation(random_state=random_state),
+        MeanShift()
+    ]
+
+    names = [
+        "Agglomerative Clustering",
+        "DBSCAN",
+        "Affinity Propagation",
+        "Mean Shift"
+    ]
+
+    for index, model in enumerate(clusters):
+        model.fit(X)
+        print_cluster_metrics(labels, model.labels_, names[index])
 
 
 def get_sampled_regions(df_path, level: str, sample_size: int, random_state):
