@@ -3,13 +3,12 @@ import sys
 import numpy as np
 import pandas as pd
 from sklearn import metrics
-from sklearn.cluster import AgglomerativeClustering
+from sklearn.cluster import AgglomerativeClustering, DBSCAN, AffinityPropagation, MeanShift
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split, KFold, cross_val_score
 from sklearn.naive_bayes import GaussianNB
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.neural_network import MLPClassifier
-from sklearn.preprocessing import LabelBinarizer
 from sklearn.svm import SVC
 from sklearn.tree import DecisionTreeClassifier
 
@@ -80,15 +79,6 @@ def get_classifiers_results(X, y, random_state):
         results[classifier_name]["Recall"] = metrics.recall_score(y_test, y_pred, average='weighted',
                                                                   zero_division=1)
         results[classifier_name]["F1 Score"] = metrics.f1_score(y_test, y_pred, average='weighted')
-        try:
-            lb = LabelBinarizer()
-            lb.fit(y_test)
-            y_test_lb = lb.transform(y_test)
-            y_pred_lb = lb.transform(y_pred)
-            results[classifier_name]["AUC-ROC"] = metrics.roc_auc_score(y_test_lb, y_pred_lb, average='weighted',
-                                                                        multi_class='ovr')
-        except ValueError:
-            results[classifier_name]["AUC-ROC"] = None
     return results
 
 
@@ -169,6 +159,8 @@ def read_csv_of_regions(df_path, regions, k):
                 columns_indexes = [0, 1, 2] + [i + 3 for i, c in enumerate(columns[3:]) if len(c) <= k]
                 columns = [columns[i] for i in columns_indexes]
                 index += 1
+                if len(columns) == 3:
+                    raise ValueError("Error: no kmer columns found.")
                 continue
             split = line.strip().split(",")
             if split[0] in reg_copy:
@@ -205,7 +197,7 @@ def run_models(df_path, level, method, max_sample_size_per_level, k, random_stat
     print("Data read.")
     if method == 'clustering':
         print("Clustering...")
-        cluster(X, y)
+        clustering(X, y, random_state)
     else:
         print("Running classifiers...")
         results = get_classifiers_results(X, y, random_state)
