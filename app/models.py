@@ -192,14 +192,11 @@ def read_csv_of_regions(df_path, regions, k):
                 break
     print("\tCreating DataFrame...")
     df = pd.DataFrame(rows, columns=columns)
-    # print(df.shape)
-    # to_drop = []
-    # for col in df.columns[3:]:
-    #    if df[col].sum() == 0:
-    #        to_drop.append(col)
-    # df.drop(columns=to_drop, inplace=True)
-    # print(df.shape)
-    # df.to_csv("test.csv", index=False)
+    to_drop = []
+    for col in df.columns[3:]:
+       if df[col].sum() == 0:
+           to_drop.append(col)
+    df.drop(columns=to_drop, inplace=True)
     # Standardize data
     # print("\tStandardizing data...")
     # scaler = StandardScaler()
@@ -265,8 +262,9 @@ def run_models(df_path, level, method, max_sample_size_per_level, k, random_stat
         clustering(X, y, random_state)
     else:
         print("Running classifiers...")
-        print_results(get_classifiers_results_with_k_fold(X, y, random_state))
-        print("Best classifier(s):", get_best_classifier(get_classifiers_results_with_k_fold(X, y, random_state)))
+        results = get_classifiers_results_with_k_fold(X, y, random_state)
+        print_results(results)
+        print("Best classifier(s):", get_best_classifier(results))
     print("Done.")
 
 
