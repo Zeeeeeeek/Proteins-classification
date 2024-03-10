@@ -77,7 +77,6 @@ class QueryWidget(QWidget):
     def run_button_clicked(self):
         try:
             classes = self.get_classes()
-            print(classes)
             if not classes:
                 raise ValueError("Query cannot be empty")
             self.progress_bar.show()
