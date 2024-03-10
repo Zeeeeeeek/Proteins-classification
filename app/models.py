@@ -1,6 +1,5 @@
 import sys
 
-import numpy as np
 import pandas as pd
 from sklearn import metrics
 from sklearn.cluster import AgglomerativeClustering, AffinityPropagation, MeanShift
@@ -8,11 +7,9 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import make_scorer
 from sklearn.model_selection import train_test_split, cross_validate
 from sklearn.naive_bayes import GaussianNB
-from sklearn.neighbors import KNeighborsClassifier
 from sklearn.neural_network import MLPClassifier
-from sklearn.preprocessing import StandardScaler, Normalizer
+from sklearn.preprocessing import Normalizer
 from sklearn.svm import SVC
-from sklearn.tree import DecisionTreeClassifier
 
 """
 Usage: python models.py <path_to_csv> <level> <method> <max_sample_size_per_level> <k> [random_state]
@@ -25,42 +22,37 @@ def get_y_and_X(df, level: str):
     match level:
         case "class":
             X['label'] = df.apply(lambda row: row["class_topology_fold_clan"].split(".")[0] if len(
-                row["class_topology_fold_clan"].split(".")) > 0 else np.nan, axis=1)
+                row["class_topology_fold_clan"].split(".")) > 0 else "N/A", axis=1)
         case "topology":
             X['label'] = df.apply(lambda row: row["class_topology_fold_clan"].split(".")[1] if len(
-                row["class_topology_fold_clan"].split(".")) > 1 else np.nan, axis=1)
+                row["class_topology_fold_clan"].split(".")) > 1 else "N/A", axis=1)
         case "fold":
             X['label'] = df.apply(lambda row: row["class_topology_fold_clan"].split(".")[2] if len(
-                row["class_topology_fold_clan"].split(".")) > 2 else np.nan, axis=1)
+                row["class_topology_fold_clan"].split(".")) > 2 else "N/A", axis=1)
         case "clan":
             X['label'] = df.apply(lambda row: row["class_topology_fold_clan"].split(".")[3] if len(
-                row["class_topology_fold_clan"].split(".")) > 3 else np.nan, axis=1)
+                row["class_topology_fold_clan"].split(".")) > 3 else "N/A", axis=1)
         case _:
             raise ValueError(f"Error: {level} is not a valid level. Please use one of the following: "
-                             f"class, topology, fold, clan, class_topology, class_topology_fold, "
-                             f"class_topology_fold_clan.")
-    X.dropna(subset=["label"], inplace=True)
+                             f"class, topology, fold, clan")
+
     return X['label'].astype(str), X.drop(columns=["class_topology_fold_clan",
                                                    "region_id", "label"])
 
 
 def get_classifiers(random_state):
     names = [
-        "K Nearest Neighbors",
         "SVM",
-        "Decision Tree",
         "Random Forest",
         "Random Forest Log Loss",
         "Neural Net",
         "Naive Bayes"
     ]
     classifiers = [
-        KNeighborsClassifier(),
         SVC(random_state=random_state),
-        DecisionTreeClassifier(random_state=random_state),
         RandomForestClassifier(random_state=random_state),
         RandomForestClassifier(random_state=random_state, criterion='log_loss'),
-        MLPClassifier(random_state=random_state),
+        MLPClassifier(random_state=random_state, max_iter=500),
         GaussianNB()
     ]
     return names, classifiers
@@ -132,14 +124,12 @@ def print_cluster_metrics(labels_true, labels_pred, method: str, data, random_st
 def clustering(X, labels, random_state):
     clusters = [
         AgglomerativeClustering(n_clusters=len(set(labels))),
-        # DBSCAN(),
         AffinityPropagation(random_state=random_state),
         MeanShift()
     ]
 
     names = [
         "Agglomerative Clustering",
-        # "DBSCAN",
         "Affinity Propagation",
         "Mean Shift"
     ]
@@ -194,17 +184,12 @@ def read_csv_of_regions(df_path, regions, k):
     df = pd.DataFrame(rows, columns=columns)
     to_drop = []
     for col in df.columns[3:]:
-       if df[col].sum() == 0:
-           to_drop.append(col)
+        if df[col].sum() == 0:
+            to_drop.append(col)
     df.drop(columns=to_drop, inplace=True)
-    # Standardize data
-    # print("\tStandardizing data...")
-    # scaler = StandardScaler()
-    # df[df.columns[3:]] = scaler.fit_transform(df[df.columns[3:]])
-    # print("\tNormalizing data...")
-    # normalizer = Normalizer()
-    # df[df.columns[3:]] = normalizer.fit_transform(df[df.columns[3:]])
-
+    print("\tNormalizing data...")
+    normalizer = Normalizer()
+    df[df.columns[3:]] = normalizer.fit_transform(df[df.columns[3:]])
     return df
 
 
@@ -254,7 +239,8 @@ def run_models(df_path, level, method, max_sample_size_per_level, k, random_stat
     print("\tReading data...")
     df = read_csv_of_regions(df_path, sampled_regions, k)
     y, X = get_y_and_X(df, level)
-    print(len(y))
+    print("Sample length: ", len(y))
+    print("Sample's classes: ", dict(y.value_counts()))
     if 'sequence' in X.columns:
         X.drop(columns=['sequence'], inplace=True)
     if method == 'clustering':
