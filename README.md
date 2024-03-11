@@ -32,7 +32,7 @@ query 2 3 4 5 -o proteins -m -t 10
 
 ### Kmer counting
 ```
-kmer <input_file> <kmer_size> [-o OUTPUT] [-t THREADS]
+kmer <input_file> <kmer_size> [-o OUTPUT]
 ```
 Performs k-mer counting on the input file and stores the results in a csv file.
 
