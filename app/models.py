@@ -44,14 +44,12 @@ def get_classifiers(random_state):
     names = [
         "SVM",
         "Random Forest",
-        "Random Forest Log Loss",
         "Neural Net",
         "Naive Bayes"
     ]
     classifiers = [
         SVC(random_state=random_state),
         RandomForestClassifier(random_state=random_state),
-        RandomForestClassifier(random_state=random_state, criterion='log_loss'),
         MLPClassifier(random_state=random_state, max_iter=500),
         GaussianNB()
     ]
@@ -221,7 +219,7 @@ def get_best_classifier(results):
             result.append(classifier)
             best_found = True
         else:
-            if points == list(sorted_scores.values())[0]:
+            if points == result[0]:
                 result.append(classifier)
             else:
                 break
