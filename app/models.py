@@ -180,11 +180,6 @@ def read_csv_of_regions(df_path, regions, k):
                 break
     print("\tCreating DataFrame...")
     df = pd.DataFrame(rows, columns=columns)
-    to_drop = []
-    for col in df.columns[3:]:
-        if df[col].sum() == 0:
-            to_drop.append(col)
-    df.drop(columns=to_drop, inplace=True)
     print("\tNormalizing data...")
     normalizer = Normalizer()
     df[df.columns[3:]] = normalizer.fit_transform(df[df.columns[3:]])
