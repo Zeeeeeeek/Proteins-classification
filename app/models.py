@@ -10,10 +10,6 @@ from sklearn.naive_bayes import GaussianNB
 from sklearn.neural_network import MLPClassifier
 from sklearn.preprocessing import Normalizer
 from sklearn.svm import SVC
-# Temp zone TODO: remove
-import logging
-
-logging.basicConfig(level=logging.INFO, format='%(message)s', filename='rep.log', filemode='w')
 
 """
 Usage: python models.py <path_to_csv> <level> <method> <max_sample_size_per_level> <k> [random_state]
@@ -104,20 +100,14 @@ def get_classifiers_results_with_k_fold(X, y, random_state):
 def print_results(results):
     for classifier, met in results.items():
         print("=" * 30 + "\n")
-        logging.info("=" * 30 + "\n")
         print(classifier)
-        logging.info(classifier)
         print("\nMetrics:")
-        logging.info("\nMetrics:")
         for metric, value in met.items():
             if value is not None:
                 print(f"\t{metric}: {value:.4f}")
-                logging.info(f"\t{metric}: {value:.4f}")
             else:
                 print(f"\t{metric}: N/A")
-                logging.info(f"\t{metric}: N/A")
         print()
-        logging.info("\n")
 
 
 def print_cluster_metrics(labels_true, labels_pred, method: str, data, random_state):
