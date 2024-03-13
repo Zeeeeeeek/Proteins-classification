@@ -180,9 +180,16 @@ def read_csv_of_regions(df_path, regions, k):
                 break
     print("\tCreating DataFrame...")
     df = pd.DataFrame(rows, columns=columns)
+    cols_zero_sum = df.columns[(df.sum() == 0)]
+    order = df.columns
+    df = df.drop(columns=cols_zero_sum)
     print("\tNormalizing data...")
     normalizer = Normalizer()
     df[df.columns[3:]] = normalizer.fit_transform(df[df.columns[3:]])
+    to_merge = pd.DataFrame(columns=cols_zero_sum, index=df.index)
+    to_merge[:] = 0
+    df = pd.concat([df, to_merge], axis=1, copy=False)
+    df = df[order]
     return df
 
 
