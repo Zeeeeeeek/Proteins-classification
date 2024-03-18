@@ -23,7 +23,7 @@ def kmer_count(k, sequence):
     return kmer_dict
 
 
-def single_thread_kmer_count(df_path, k: int, output_path):
+def to_csv_kmer_count(df_path, k: int, output_path):
     df = pd.read_csv(df_path, usecols=["region_id", "class_topology_fold_clan", "sequence"])
     writer = KmerCsvWriter(output_path)
     for index, row in df.iterrows():
