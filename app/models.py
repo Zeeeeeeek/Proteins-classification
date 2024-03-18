@@ -1,4 +1,5 @@
 import sys
+from typing import Callable, List, Tuple, Any, Set
 
 import pandas as pd
 from sklearn import metrics
@@ -93,11 +94,11 @@ def print_results(results):
         print()
 
 
-def clustering(X, labels, random_state):
+def get_clustering_models(random_state, labels: Set[str]):
     clusters = [
-        AgglomerativeClustering(n_clusters=len(set(labels))),
-        AgglomerativeClustering(n_clusters=len(set(labels)), linkage='complete'),
-        AgglomerativeClustering(n_clusters=len(set(labels)), linkage='average'),
+        AgglomerativeClustering(n_clusters=len(labels)),
+        AgglomerativeClustering(n_clusters=len(labels), linkage='complete'),
+        AgglomerativeClustering(n_clusters=len(labels), linkage='average'),
         AffinityPropagation(random_state=random_state, damping=0.9, max_iter=1000),
         AffinityPropagation(random_state=random_state, damping=0.9, max_iter=1500),
     ]
@@ -109,9 +110,13 @@ def clustering(X, labels, random_state):
         "Affinity Propagation",
         "Affinity Propagation (1500 iterations)"
     ]
+    return zip(names, clusters)
 
+
+def clustering(X, labels, random_state,
+               models_provider: Callable[[int, Set[str]], List[Tuple[str, Any]]] = get_clustering_models):
     scores = {}
-    for name, model in zip(names, clusters):
+    for name, model in models_provider(random_state, set(labels)):
         model.fit(X)
         scores[name] = {
             "Silhouette Score": metrics.silhouette_score(X, model.labels_, random_state=random_state),
