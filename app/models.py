@@ -5,7 +5,7 @@ from sklearn import metrics
 from sklearn.cluster import AgglomerativeClustering, AffinityPropagation, MeanShift
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import make_scorer
-from sklearn.model_selection import train_test_split, cross_validate
+from sklearn.model_selection import cross_validate
 from sklearn.naive_bayes import GaussianNB
 from sklearn.neural_network import MLPClassifier
 from sklearn.preprocessing import Normalizer
@@ -44,8 +44,8 @@ def get_classifiers(random_state):
     names = [
         "SVM",
         "Random Forest",
-        "Neural Net",
-        "Naive Bayes"
+        "MLPClassifier",
+        "GaussianNB"
     ]
     classifiers = [
         SVC(random_state=random_state),
@@ -54,24 +54,6 @@ def get_classifiers(random_state):
         GaussianNB()
     ]
     return names, classifiers
-
-
-def get_classifiers_results(X, y, random_state):
-    names, classifiers = get_classifiers(random_state)
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=random_state)
-    results = {}
-    for index, classifier in enumerate(classifiers):
-        classifier_name = names[index]
-        classifier.fit(X_train, y_train)
-        y_pred = classifier.predict(X_test)
-        results[classifier_name] = {}
-        results[classifier_name]["Accuracy"] = metrics.accuracy_score(y_test, y_pred)
-        results[classifier_name]["Precision"] = metrics.precision_score(y_test, y_pred, average='weighted',
-                                                                        zero_division=1)
-        results[classifier_name]["Recall"] = metrics.recall_score(y_test, y_pred, average='weighted',
-                                                                  zero_division=1)
-        results[classifier_name]["F1 Score"] = metrics.f1_score(y_test, y_pred, average='weighted')
-    return results
 
 
 def get_classifiers_results_with_k_fold(X, y, random_state):
@@ -122,7 +104,7 @@ def print_cluster_metrics(labels_true, labels_pred, method: str, data, random_st
 def clustering(X, labels, random_state):
     clusters = [
         AgglomerativeClustering(n_clusters=len(set(labels))),
-        AffinityPropagation(random_state=random_state),
+        AffinityPropagation(random_state=random_state, damping=0.9, max_iter=1000),
         MeanShift()
     ]
 
@@ -132,9 +114,16 @@ def clustering(X, labels, random_state):
         "Mean Shift"
     ]
 
-    for index, model in enumerate(clusters):
+    scores = {}
+    for name, model in zip(names, clusters):
         model.fit(X)
-        print_cluster_metrics(labels, model.labels_, names[index], X, random_state)
+        scores[name] = {
+            "Silhouette Score": metrics.silhouette_score(X, model.labels_, random_state=random_state),
+            "Rand Score": metrics.rand_score(labels, model.labels_),
+            "Homogeneity Score": metrics.homogeneity_score(labels, model.labels_),
+            "Completeness Score": metrics.completeness_score(labels, model.labels_)
+        }
+    print_results(scores)
 
 
 def get_sampled_regions(df_path, level: str, sample_size: int, random_state):
