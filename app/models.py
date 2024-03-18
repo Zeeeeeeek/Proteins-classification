@@ -3,10 +3,9 @@ from typing import Callable, List, Tuple, Any, Set
 
 import pandas as pd
 from sklearn import metrics
-from sklearn.cluster import AgglomerativeClustering, AffinityPropagation, MeanShift
+from sklearn.cluster import AgglomerativeClustering, AffinityPropagation
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import make_scorer
-from sklearn.mixture import GaussianMixture
 from sklearn.model_selection import cross_validate
 from sklearn.naive_bayes import GaussianNB
 from sklearn.neural_network import MLPClassifier
