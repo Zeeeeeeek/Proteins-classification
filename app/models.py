@@ -5,10 +5,11 @@ from sklearn import metrics
 from sklearn.cluster import AgglomerativeClustering, AffinityPropagation, MeanShift
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import make_scorer
+from sklearn.mixture import GaussianMixture
 from sklearn.model_selection import cross_validate
 from sklearn.naive_bayes import GaussianNB
 from sklearn.neural_network import MLPClassifier
-from sklearn.preprocessing import Normalizer
+from sklearn.preprocessing import Normalizer, StandardScaler
 from sklearn.svm import SVC
 
 """
@@ -92,26 +93,21 @@ def print_results(results):
         print()
 
 
-def print_cluster_metrics(labels_true, labels_pred, method: str, data, random_state):
-    print("=" * 30)
-    print(f"{method}")
-    print("\tSilhouette_score", metrics.silhouette_score(data, labels_pred, random_state=random_state))
-    print("\tRand_score", metrics.rand_score(labels_true, labels_pred))
-    print("\tHomogeneity_score", metrics.homogeneity_score(labels_true, labels_pred))
-    print("\tCompleteness_score", metrics.completeness_score(labels_true, labels_pred))
-
-
 def clustering(X, labels, random_state):
     clusters = [
         AgglomerativeClustering(n_clusters=len(set(labels))),
+        AgglomerativeClustering(n_clusters=len(set(labels)), linkage='complete'),
+        AgglomerativeClustering(n_clusters=len(set(labels)), linkage='average'),
         AffinityPropagation(random_state=random_state, damping=0.9, max_iter=1000),
-        MeanShift()
+        AffinityPropagation(random_state=random_state, damping=0.9, max_iter=1500),
     ]
 
     names = [
-        "Agglomerative Clustering",
+        "Agglomerative Clustering (Ward)",
+        "Agglomerative Clustering Complete Linkage",
+        "Agglomerative Clustering Average Linkage",
         "Affinity Propagation",
-        "Mean Shift"
+        "Affinity Propagation (1500 iterations)"
     ]
 
     scores = {}
@@ -124,6 +120,20 @@ def clustering(X, labels, random_state):
             "Completeness Score": metrics.completeness_score(labels, model.labels_)
         }
     print_results(scores)
+    print(f"Best model: {get_best_model(scores)}")
+
+
+def get_best_model(scores):
+    best_score = -float("inf")
+    best_model = None
+
+    for name, model_scores in scores.items():
+        score = sum(model_scores.values()) / len(model_scores)
+        if score > best_score:
+            best_score = score
+            best_model = name
+
+    return best_model
 
 
 def get_sampled_regions(df_path, level: str, sample_size: int, random_state):
@@ -140,7 +150,7 @@ def get_sampled_regions(df_path, level: str, sample_size: int, random_state):
             'region_id'].tolist()
 
 
-def read_csv_of_regions(df_path, regions, k):
+def read_csv_of_regions(df_path, regions, k, preprocess):
     index = 0
     rows = []
     reg_copy = regions.copy()
@@ -169,16 +179,31 @@ def read_csv_of_regions(df_path, regions, k):
                 break
     print("\tCreating DataFrame...")
     df = pd.DataFrame(rows, columns=columns)
-    cols_zero_sum = df.columns[(df.sum() == 0)]
-    order = df.columns
-    df = df.drop(columns=cols_zero_sum)
+    if preprocess == 'normalize':
+        return normalize_df(df)
+    elif preprocess == 'standardize':
+        return standardize_df(df)
+    else:
+        raise ValueError("Error: preprocess must be either 'normalize' or 'standardize'.")
+
+
+def normalize_df(df):
     print("\tNormalizing data...")
     normalizer = Normalizer()
+    columns_sum_zero = df.columns[(df.sum() == 0)]
+    order = df.columns
+    df = df.drop(columns=columns_sum_zero)
     df[df.columns[3:]] = normalizer.fit_transform(df[df.columns[3:]])
-    to_merge = pd.DataFrame(columns=cols_zero_sum, index=df.index)
+    to_merge = pd.DataFrame(columns=columns_sum_zero, index=df.index)
     to_merge[:] = 0
     df = pd.concat([df, to_merge], axis=1, copy=False)
-    df = df[order]
+    return df[order]
+
+
+def standardize_df(df):
+    print("\tStandardizing data...")
+    scalar = StandardScaler()
+    df[df.columns[3:]] = scalar.fit_transform(df[df.columns[3:]])
     return df
 
 
@@ -217,16 +242,16 @@ def get_best_classifier(results):
     return result
 
 
-def run_models(df_path, level, method, max_sample_size_per_level, k, random_state=42):
+def run_models(df_path, level, method, max_sample_size_per_level: int, k, random_state=42):
     if method not in ['clustering', 'classifiers']:
         raise ValueError("Error: method must be either 'cluster' or 'classifiers'.")
-    if max_sample_size_per_level < 1 or not isinstance(max_sample_size_per_level, int):
+    if max_sample_size_per_level < 1:
         raise ValueError("Error: max_sample_size_per_level must be an integer greater than 0.")
     print("Reading CSV...")
     print("\tSampling regions...")
     sampled_regions = get_sampled_regions(df_path, level, max_sample_size_per_level, random_state)
     print("\tReading data...")
-    df = read_csv_of_regions(df_path, sampled_regions, k)
+    df = read_csv_of_regions(df_path, sampled_regions, k, "normalize" if method == "classifiers" else "standardize")
     y, X = get_y_and_X(df, level)
     print("Sample length: ", len(y))
     print("Sample's classes: ", dict(y.value_counts()))
@@ -240,6 +265,7 @@ def run_models(df_path, level, method, max_sample_size_per_level, k, random_stat
         results = get_classifiers_results_with_k_fold(X, y, random_state)
         print_results(results)
         print("Best classifier(s):", get_best_classifier(results))
+        print("Temp best: ", get_best_model(results))
     print("Done.")
 
 
