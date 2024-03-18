@@ -211,41 +211,6 @@ def standardize_df(df):
     return df
 
 
-def get_best_classifier(results):
-    max_dict = {
-        "Accuracy": 0,
-        "Precision": 0,
-        "Recall": 0,
-        "F1 Score": 0
-    }
-    for classifier, met in results.items():
-        for metric, value in met.items():
-            if value > max_dict[metric]:
-                max_dict[metric] = value
-    scores = {}  # Each classifier with the best metric gains a point
-    for classifier, met in results.items():
-        for metric, value in met.items():
-            if value == max_dict[metric]:
-                if classifier in scores:
-                    scores[classifier] += 1
-                else:
-                    scores[classifier] = 1
-    # Sort by points
-    sorted_scores = dict(sorted(scores.items(), key=lambda item: item[1], reverse=True))
-    result = []
-    best_found = False
-    for classifier, points in sorted_scores.items():
-        if not best_found:
-            result.append(classifier)
-            best_found = True
-        else:
-            if points == result[0]:
-                result.append(classifier)
-            else:
-                break
-    return result
-
-
 def run_models(df_path, level, method, max_sample_size_per_level: int, k, random_state=42):
     if method not in ['clustering', 'classifiers']:
         raise ValueError("Error: method must be either 'cluster' or 'classifiers'.")
@@ -268,8 +233,7 @@ def run_models(df_path, level, method, max_sample_size_per_level: int, k, random
         print("Running classifiers...")
         results = get_classifiers_results_with_k_fold(X, y, random_state)
         print_results(results)
-        print("Best classifier(s):", get_best_classifier(results))
-        print("Temp best: ", get_best_model(results))
+        print("Best classifier: ", get_best_model(results))
     print("Done.")
 
 
