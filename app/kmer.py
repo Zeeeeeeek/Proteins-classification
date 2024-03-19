@@ -25,10 +25,10 @@ def kmer_count(k, sequence):
 
 def to_csv_kmer_count(df_path, k: int, output_path):
     df = pd.read_csv(df_path, usecols=["region_id", "class_topology_fold_clan", "sequence"])
-    writer = KmerCsvWriter(output_path)
+    writer = KmerCsvWriter(output_path, non_kmer_columns=["region_id", "class_topology_fold_clan", "sequence"])
     for index, row in df.iterrows():
         if row['sequence'] is None or row['sequence'] == "":
             continue
-        writer.write_kmer_count(kmer_count(k, row['sequence']), row['region_id'], row['class_topology_fold_clan'],
-                                row['sequence'])
+        writer.write_kmer_count(kmer_count(k, row['sequence']), [row['region_id'], row['class_topology_fold_clan'],
+                                                                 row['sequence']])
     writer.close()
