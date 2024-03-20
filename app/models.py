@@ -114,6 +114,14 @@ def get_clustering_models(random_state, labels: Set[str]):
 
 def clustering(X, labels, random_state,
                models_provider: Callable[[int, Set[str]], List[Tuple[str, Any]]] = get_clustering_models):
+    """
+    Run clustering models and print the results.
+    :param X: DataFrame
+    :param labels: The true labels
+    :param random_state: int
+    :param models_provider: A function that returns a list of tuples with the model's name and the model itself, models
+    should be initialized with the random_state and the set of labels' length as n_clusters.
+    """
     scores = {}
     for name, model in models_provider(random_state, set(labels)):
         model.fit(X)
@@ -182,33 +190,20 @@ def read_csv_of_regions(df_path, regions, k, preprocess):
             if len(reg_copy) == 0:
                 break
     print("\tCreating DataFrame...")
-    df = pd.DataFrame(rows, columns=columns)
-    if preprocess == 'normalize':
-        return normalize_df(df)
-    elif preprocess == 'standardize':
-        return standardize_df(df)
-    else:
-        raise ValueError("Error: preprocess must be either 'normalize' or 'standardize'.")
+    return transform_df(pd.DataFrame(rows, columns=columns),
+                        Normalizer() if preprocess == "normalize" else StandardScaler())
 
 
-def normalize_df(df):
-    print("\tNormalizing data...")
-    normalizer = Normalizer()
+def transform_df(df, transformer):
+    print(f"\tTransforming dataframe with {transformer.__class__.__name__}...")
     columns_sum_zero = df.columns[(df.sum() == 0)]
     order = df.columns
     df = df.drop(columns=columns_sum_zero)
-    df[df.columns[3:]] = normalizer.fit_transform(df[df.columns[3:]])
+    df[df.columns[3:]] = transformer.fit_transform(df[df.columns[3:]])
     to_merge = pd.DataFrame(columns=columns_sum_zero, index=df.index)
     to_merge[:] = 0
     df = pd.concat([df, to_merge], axis=1, copy=False)
     return df[order]
-
-
-def standardize_df(df):
-    print("\tStandardizing data...")
-    scalar = StandardScaler()
-    df[df.columns[3:]] = scalar.fit_transform(df[df.columns[3:]])
-    return df
 
 
 def run_models(df_path, level, method, max_sample_size_per_level: int, k, random_state=42):
