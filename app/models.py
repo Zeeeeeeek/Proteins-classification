@@ -3,7 +3,7 @@ from typing import Callable, List, Tuple, Any, Set
 
 import pandas as pd
 from sklearn import metrics
-from sklearn.cluster import AgglomerativeClustering, AffinityPropagation
+from sklearn.cluster import AgglomerativeClustering, AffinityPropagation, KMeans
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import make_scorer
 from sklearn.model_selection import cross_validate
@@ -36,7 +36,9 @@ def get_y_and_X(df, level: str):
         case _:
             raise ValueError(f"Error: {level} is not a valid level. Please use one of the following: "
                              f"class, topology, fold, clan")
-
+    X = X.groupby('label').filter(lambda x: len(x) > 5)
+    # Drop rows with N/A labels
+    X = X[X['label'] != "N/A"]
     return X['label'].astype(str), X.drop(columns=["class_topology_fold_clan",
                                                    "region_id", "label"])
 
@@ -51,7 +53,7 @@ def get_classifiers(random_state):
     classifiers = [
         SVC(random_state=random_state),
         RandomForestClassifier(random_state=random_state),
-        MLPClassifier(random_state=random_state, max_iter=500),
+        MLPClassifier(random_state=random_state, max_iter=2000),
         GaussianNB()
     ]
     return names, classifiers
@@ -64,9 +66,9 @@ def get_classifiers_results_with_k_fold(X, y, random_state):
     for name, model in zip(names, models):
         scoring = {
             "Accuracy": make_scorer(metrics.accuracy_score),
-            "Precision": make_scorer(metrics.precision_score, average='weighted', zero_division=1),
-            "Recall": make_scorer(metrics.recall_score, average='weighted', zero_division=1),
-            "F1 score": make_scorer(metrics.f1_score, average='weighted')
+            "Precision": make_scorer(metrics.precision_score, average='macro', zero_division=1),
+            "Recall": make_scorer(metrics.recall_score, average='macro', zero_division=1),
+            "F1 score": make_scorer(metrics.f1_score, average='macro')
         }
         cv_results = cross_validate(model, X, y, cv=5, scoring=scoring)
 
@@ -98,16 +100,16 @@ def get_clustering_models(random_state, labels: Set[str]):
         AgglomerativeClustering(n_clusters=len(labels)),
         AgglomerativeClustering(n_clusters=len(labels), linkage='complete'),
         AgglomerativeClustering(n_clusters=len(labels), linkage='average'),
-        AffinityPropagation(random_state=random_state, damping=0.9, max_iter=1000),
         AffinityPropagation(random_state=random_state, damping=0.9, max_iter=1500),
+        KMeans(n_clusters=len(labels), random_state=random_state)
     ]
 
     names = [
-        "Agglomerative Clustering (Ward)",
+        "Agglomerative Clustering Ward Linkage",
         "Agglomerative Clustering Complete Linkage",
         "Agglomerative Clustering Average Linkage",
         "Affinity Propagation",
-        "Affinity Propagation (1500 iterations)"
+        "KMeans"
     ]
     return zip(names, clusters)
 
@@ -171,7 +173,11 @@ def read_csv_of_regions(df_path, regions, k, preprocess):
             if index == 0:
                 columns = line.strip().split(",")
                 # Filter all kmer columns that are not in the range [1, k], excluding the first 3 columns
-                columns_indexes = [0, 1, 2] + [i + 3 for i, c in enumerate(columns[3:]) if len(c) <= k]
+                columns_indexes = [0, 1, 2]
+                for i, c in enumerate(columns[3:]):
+                    if len(c) > k:
+                        break
+                    columns_indexes.append(i + 3)
                 columns = [columns[i] for i in columns_indexes]
                 index += 1
                 if len(columns) == 3:
