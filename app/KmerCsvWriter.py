@@ -18,7 +18,7 @@ class KmerCsvWriter:
         """
         self.output_path = output_path
         self.kmer_column_indexes: Dict[str, int] = dict()
-        alphabet = ['A', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V',
+        alphabet = ['A', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'K', 'L', 'M', 'N', 'P', 'Q', 'R', 'S', 'T', 'V',
                     'W', 'X', 'Y']
         last_index = 0
         for i in range(1, k + 1):

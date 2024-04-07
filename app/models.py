@@ -1,9 +1,10 @@
 import sys
+import warnings
 from typing import Callable, List, Tuple, Any, Set
 
 import pandas as pd
 from sklearn import metrics
-from sklearn.cluster import AgglomerativeClustering, AffinityPropagation, KMeans
+from sklearn.cluster import AgglomerativeClustering, AffinityPropagation
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import make_scorer
 from sklearn.model_selection import cross_validate
@@ -70,8 +71,9 @@ def get_classifiers_results_with_k_fold(X, y, random_state):
             "Recall": make_scorer(metrics.recall_score, average='macro', zero_division=1),
             "F1 score": make_scorer(metrics.f1_score, average='macro')
         }
+        warnings.filterwarnings("ignore")
         cv_results = cross_validate(model, X, y, cv=5, scoring=scoring)
-
+        warnings.filterwarnings("default")
         scores[name] = {
             "Accuracy": cv_results['test_Accuracy'].mean(),
             "Precision": cv_results['test_Precision'].mean(),
@@ -89,7 +91,7 @@ def print_results(results):
         print("\nMetrics:")
         for metric, value in met.items():
             if value is not None:
-                print(f"\t{metric}: {value:.4f}")
+                print(f"\t{metric}: {(value * 100):.2f}")
             else:
                 print(f"\t{metric}: N/A")
         print()
@@ -100,16 +102,14 @@ def get_clustering_models(random_state, labels: Set[str]):
         AgglomerativeClustering(n_clusters=len(labels)),
         AgglomerativeClustering(n_clusters=len(labels), linkage='complete'),
         AgglomerativeClustering(n_clusters=len(labels), linkage='average'),
-        AffinityPropagation(random_state=random_state, damping=0.9, max_iter=1500),
-        KMeans(n_clusters=len(labels), random_state=random_state)
+        AffinityPropagation(random_state=random_state, damping=0.9, max_iter=1500)
     ]
 
     names = [
         "Agglomerative Clustering Ward Linkage",
         "Agglomerative Clustering Complete Linkage",
         "Agglomerative Clustering Average Linkage",
-        "Affinity Propagation",
-        "KMeans"
+        "Affinity Propagation"
     ]
     return zip(names, clusters)
 

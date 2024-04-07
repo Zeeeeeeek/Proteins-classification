@@ -32,8 +32,6 @@ def three_residue_to_one(residue):
             return "M"
         case "ASN":
             return "N"
-        case "PYL":
-            return "O"
         case "PRO":
             return "P"
         case "GLN":
@@ -44,8 +42,6 @@ def three_residue_to_one(residue):
             return "S"
         case "THR":
             return "T"
-        case "SEC":
-            return "U"
         case "VAL":
             return "V"
         case "TRP":
